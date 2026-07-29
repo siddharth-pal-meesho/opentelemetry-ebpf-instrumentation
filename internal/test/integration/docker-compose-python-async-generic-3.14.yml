@@ -12,15 +12,15 @@ services:
   pythonasync:
     build:
       context: ../../..
-      dockerfile: internal/test/integration/components/pythonasync-uvloop/Dockerfile-3.14
-    image: hatest-pythonasync-uvloop
+      dockerfile: internal/test/integration/components/pythonasync-generic/Dockerfile-3.14
+    image: hatest-pythonasync-generic
     ports:
-      - "8391:8391"
+      - "8392:8392"
     environment:
       LOG_LEVEL: DEBUG
       BACKEND_URL: "http://testserver:8080"
-      UVICORN_LOOP: "${UVICORN_LOOP:-uvloop}"
-      OTEL_SERVICE_NAME: "pythonasync-uvloop"
+      LOOP: "${PYTHON_ASYNC_LOOP:-asyncio}"
+      OTEL_SERVICE_NAME: "pythonasync-generic"
     depends_on:
       testserver:
         condition: service_started
@@ -35,14 +35,14 @@ services:
       - ./configs/:/configs
       - ./system/sys/kernel/security${SECURITY_CONFIG_SUFFIX}:/sys/kernel/security
       - ../../../testoutput:/coverage
-      - ../../../testoutput/run-python-async:/var/run/obi
+      - ../../../testoutput/run-python-async-generic:/var/run/obi
     image: hatest-obi
     privileged: true
     pid: "host"
     environment:
       GOCOVERDIR: "/coverage"
       OTEL_EBPF_TRACE_PRINTER: "text"
-      OTEL_EBPF_OPEN_PORT: "8391,8080"
+      OTEL_EBPF_OPEN_PORT: "8392,8080"
       OTEL_EBPF_METRICS_FEATURES: "application,application_span_otel,application_process,application_service_graph,ebpf,application_host"
       OTEL_EBPF_PROMETHEUS_FEATURES: "application,application_span_otel,application_process,application_service_graph,ebpf,application_host"
       OTEL_EBPF_DISCOVERY_POLL_INTERVAL: 500ms
