@@ -64,6 +64,7 @@ func TestLoadAllGoFunctionNamesIncludesConditionalGoTracerSymbols(t *testing.T) 
 	for _, symbol := range gotracer.GoRuntimeMetricProbeSymbols() {
 		assert.Contains(t, ty.allGoFunctions, symbol)
 	}
+	assert.Contains(t, ty.allGoFunctions, gotracer.ExecutableIdentityProbeSymbol())
 }
 
 func TestMakeServiceAttrs(t *testing.T) {

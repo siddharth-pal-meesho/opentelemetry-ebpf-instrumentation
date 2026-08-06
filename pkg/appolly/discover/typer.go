@@ -365,6 +365,7 @@ func (t *typer) loadAllGoFunctionNames() {
 	for _, symbolName := range gotracer.GoRuntimeMetricProbeSymbols() {
 		t.addGoFunctionName(uniqueFunctions, symbolName)
 	}
+	t.addGoFunctionName(uniqueFunctions, gotracer.ExecutableIdentityProbeSymbol())
 }
 
 func (t *typer) addGoFunctionName(uniqueFunctions map[string]struct{}, symbolName string) {

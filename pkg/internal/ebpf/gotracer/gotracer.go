@@ -16,13 +16,16 @@ package gotracer // import "go.opentelemetry.io/obi/pkg/internal/ebpf/gotracer"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 	"unsafe"
 
 	"github.com/cilium/ebpf"
+	"github.com/cilium/ebpf/link"
 
 	"go.opentelemetry.io/otel/attribute"
 
@@ -47,9 +50,16 @@ type runtimeMetricTargetKey struct {
 	ns  uint32
 }
 
+type executableIdentity = BpfGoExecutableKeyT
+
 const missingGoOffset = ^uint64(0)
 
-var nextRuntimeMetricGeneration atomic.Uint64
+const executableIdentityProbeSymbol = "runtime.sigtrampgo"
+
+var (
+	nextRuntimeMetricGeneration  atomic.Uint64
+	executableIdentityResolverMu sync.Mutex
+)
 
 func newRuntimeMetricGeneration() uint64 {
 	for {
@@ -200,19 +210,23 @@ var goRuntimeMetricOffsetGroups = [...]struct {
 }
 
 type Tracer struct {
-	log                        *slog.Logger
-	pidsFilter                 ebpfcommon.ServiceFilter
-	cfg                        *config.EBPFTracer
-	metrics                    imetrics.Reporter
-	bpfObjects                 BpfObjects
-	closers                    []io.Closer
-	disabledRouteHarvesting    bool
-	supportsBPFLoop            bool
-	runtimeMetricTargetKeys    map[runtimeMetricTargetKey]BpfPidInfo
-	goChannelOffsetsByIno      map[uint64]bool
-	goRuntimeMetricMaskByIno   map[uint64]uint64
-	goRuntimeGCGoalSourceByIno map[uint64]goRuntimeGCGoalSource
-	currentBinaryIno           uint64
+	log                               *slog.Logger
+	pidsFilter                        ebpfcommon.ServiceFilter
+	cfg                               *config.EBPFTracer
+	metrics                           imetrics.Reporter
+	bpfObjects                        BpfObjects
+	closers                           []io.Closer
+	disabledRouteHarvesting           bool
+	supportsBPFLoop                   bool
+	runtimeMetricTargetKeys           map[runtimeMetricTargetKey]BpfPidInfo
+	goChannelOffsetsByExecutable      map[executableIdentity]bool
+	goRuntimeMetricMaskByExecutable   map[executableIdentity]uint64
+	goRuntimeGCGoalSourceByExecutable map[executableIdentity]goRuntimeGCGoalSource
+	goOffsetsByExecutable             map[executableIdentity]BpfOffTableT
+	currentBinary                     executableIdentity
+	executableIdentityMu              sync.Mutex
+	executableIdentities              map[app.PID]executableIdentity
+	executableIdentitiesByFile        map[executableIdentity]executableIdentity
 }
 
 func New(
@@ -232,20 +246,105 @@ func New(
 	}
 
 	return &Tracer{
-		log:                        log,
-		pidsFilter:                 pidFilter,
-		cfg:                        &cfg.EBPF,
-		metrics:                    metrics,
-		disabledRouteHarvesting:    disabledRouteHarvesting,
-		supportsBPFLoop:            ebpfcommon.SupportsEBPFLoops(log, cfg.EBPF.OverrideBPFLoopEnabled),
-		runtimeMetricTargetKeys:    map[runtimeMetricTargetKey]BpfPidInfo{},
-		goChannelOffsetsByIno:      map[uint64]bool{},
-		goRuntimeMetricMaskByIno:   map[uint64]uint64{},
-		goRuntimeGCGoalSourceByIno: map[uint64]goRuntimeGCGoalSource{},
+		log:                               log,
+		pidsFilter:                        pidFilter,
+		cfg:                               &cfg.EBPF,
+		metrics:                           metrics,
+		disabledRouteHarvesting:           disabledRouteHarvesting,
+		supportsBPFLoop:                   ebpfcommon.SupportsEBPFLoops(log, cfg.EBPF.OverrideBPFLoopEnabled),
+		runtimeMetricTargetKeys:           map[runtimeMetricTargetKey]BpfPidInfo{},
+		goChannelOffsetsByExecutable:      map[executableIdentity]bool{},
+		goRuntimeMetricMaskByExecutable:   map[executableIdentity]uint64{},
+		goRuntimeGCGoalSourceByExecutable: map[executableIdentity]goRuntimeGCGoalSource{},
+		goOffsetsByExecutable:             map[executableIdentity]BpfOffTableT{},
+		executableIdentities:              map[app.PID]executableIdentity{},
+		executableIdentitiesByFile:        map[executableIdentity]executableIdentity{},
 	}
 }
 
+func (p *Tracer) ResolveExecutableIdentity(
+	exe *link.Executable,
+	fileInfo *exec.FileInfo,
+	offsets *goexec.Offsets,
+) (uint64, uint64, error) {
+	if fileInfo == nil {
+		return 0, 0, errors.New("go executable identity resolver has no file information")
+	}
+
+	executableIdentityResolverMu.Lock()
+	defer executableIdentityResolverMu.Unlock()
+
+	p.executableIdentityMu.Lock()
+	pid := fileInfo.Pid()
+	if identity, ok := p.executableIdentities[pid]; ok {
+		p.executableIdentityMu.Unlock()
+		return identity.Dev, identity.Ino, nil
+	}
+	visibleIdentity := executableIdentity{Dev: fileInfo.Dev(), Ino: fileInfo.Ino()}
+	if identity, ok := p.executableIdentitiesByFile[visibleIdentity]; ok {
+		p.executableIdentities[pid] = identity
+		p.executableIdentityMu.Unlock()
+		return identity.Dev, identity.Ino, nil
+	}
+	p.executableIdentityMu.Unlock()
+	if p.bpfObjects.GoExecutableIdentityRequests == nil ||
+		p.bpfObjects.GoExecutableIdentities == nil ||
+		p.bpfObjects.ObiCaptureGoExecutableIdentity == nil ||
+		p.bpfObjects.ObiResolveGoExecutableIdentity == nil {
+		return 0, 0, errors.New("go executable identity resolver is not loaded")
+	}
+	if exe == nil || offsets == nil {
+		return 0, 0, errors.New("go executable identity resolver has no executable offsets")
+	}
+	probeOffset, ok := offsets.Funcs[executableIdentityProbeSymbol]
+	if !ok {
+		return 0, 0, fmt.Errorf("go executable identity resolver symbol %q is unavailable", executableIdentityProbeSymbol)
+	}
+
+	capture, err := link.Kprobe("uprobe_register", p.bpfObjects.ObiCaptureGoExecutableIdentity, nil)
+	if err != nil {
+		return 0, 0, fmt.Errorf("attaching Go executable identity resolver: %w", err)
+	}
+	defer capture.Close()
+
+	const requestKey = uint8(0)
+	if err := p.bpfObjects.GoExecutableIdentityRequests.Put(requestKey, uint8(1)); err != nil {
+		return 0, 0, fmt.Errorf("requesting Go executable identity: %w", err)
+	}
+	defer func() { _ = p.bpfObjects.GoExecutableIdentityRequests.Delete(requestKey) }()
+	defer func() { _ = p.bpfObjects.GoExecutableIdentities.Delete(requestKey) }()
+
+	probe, err := exe.Uprobe("", p.bpfObjects.ObiResolveGoExecutableIdentity, &link.UprobeOptions{
+		Address: probeOffset.Start,
+	})
+	if err != nil {
+		return 0, 0, fmt.Errorf("triggering Go executable identity resolver: %w", err)
+	}
+	defer probe.Close()
+
+	var identity executableIdentity
+	if err := p.bpfObjects.GoExecutableIdentities.Lookup(requestKey, &identity); err != nil {
+		return 0, 0, fmt.Errorf("reading Go executable identity: %w", err)
+	}
+	if identity.Ino == 0 {
+		return 0, 0, errors.New("resolved Go executable identity has no inode")
+	}
+	p.executableIdentityMu.Lock()
+	p.executableIdentities[pid] = identity
+	p.executableIdentitiesByFile[visibleIdentity] = identity
+	p.executableIdentityMu.Unlock()
+	return identity.Dev, identity.Ino, nil
+}
+
 func (p *Tracer) AllowPID(pid app.PID, ns uint32, fi *exec.FileInfo) {
+	if fi != nil && p.bpfObjects.GoOffsetsByPid != nil {
+		identity := p.executableIdentity(fi)
+		p.executableIdentityMu.Lock()
+		if offsets, ok := p.goOffsetsByExecutable[identity]; ok {
+			_ = p.bpfObjects.GoOffsetsByPid.Put(uint32(pid), offsets)
+		}
+		p.executableIdentityMu.Unlock()
+	}
 	p.pidsFilter.AllowPID(pid, ns, fi, ebpfcommon.PIDTypeGo)
 	p.registerRuntimeMetricTarget(pid, ns, fi)
 }
@@ -253,6 +352,36 @@ func (p *Tracer) AllowPID(pid app.PID, ns uint32, fi *exec.FileInfo) {
 func (p *Tracer) BlockPID(pid app.PID, ns uint32) {
 	p.deleteRuntimeMetricTarget(pid, ns)
 	p.pidsFilter.BlockPID(pid, ns)
+	if p.bpfObjects.GoOffsetsByPid != nil {
+		_ = p.bpfObjects.GoOffsetsByPid.Delete(uint32(pid))
+	}
+	p.executableIdentityMu.Lock()
+	delete(p.executableIdentities, pid)
+	p.executableIdentityMu.Unlock()
+}
+
+func (p *Tracer) executableIdentity(fileInfo *exec.FileInfo) executableIdentity {
+	p.executableIdentityMu.Lock()
+	identity, ok := p.executableIdentities[fileInfo.Pid()]
+	if !ok {
+		visibleIdentity := executableIdentity{Dev: fileInfo.Dev(), Ino: fileInfo.Ino()}
+		identity, ok = p.executableIdentitiesByFile[visibleIdentity]
+		if ok {
+			p.executableIdentities[fileInfo.Pid()] = identity
+		}
+	}
+	p.executableIdentityMu.Unlock()
+	if ok {
+		return identity
+	}
+
+	if p.log != nil {
+		p.log.Debug("unable to resolve Go executable backing identity; using visible inode",
+			"pid", fileInfo.Pid(),
+			"inode", fileInfo.Ino(),
+			"error", "Go executable identity is not cached")
+	}
+	return executableIdentity{Ino: fileInfo.Ino()}
 }
 
 func (p *Tracer) supportsContextPropagation() bool {
@@ -505,16 +634,27 @@ func (p *Tracer) RegisterOffsets(fileInfo *exec.FileInfo, offsets *goexec.Offset
 		}
 	}
 
-	ino := fileInfo.Ino()
-	if err := p.bpfObjects.GoOffsetsMap.Put(ino, offTable); err != nil {
-		p.log.Error("setting Go offsets map failed", "pid", fileInfo.Pid(), "ino", ino, "error", err)
-		delete(p.goRuntimeMetricMaskByIno, ino)
+	identity := p.executableIdentity(fileInfo)
+	if err := p.bpfObjects.GoOffsetsByPid.Put(uint32(fileInfo.Pid()), offTable); err != nil {
+		p.log.Error("setting Go offsets map failed",
+			"pid", fileInfo.Pid(),
+			"error", err)
+		delete(p.goRuntimeMetricMaskByExecutable, identity)
 		p.deleteRuntimeMetricTarget(fileInfo.Pid(), fileInfo.Ns())
 		return
 	}
+	p.executableIdentityMu.Lock()
+	p.goOffsetsByExecutable[identity] = offTable
+	p.executableIdentityMu.Unlock()
+	if err := p.bpfObjects.GoOffsetsMap.Put(fileInfo.Ino(), offTable); err != nil {
+		p.log.Debug("setting fallback Go offsets map failed",
+			"pid", fileInfo.Pid(),
+			"ino", fileInfo.Ino(),
+			"error", err)
+	}
 
 	p.recordGoRuntimeMetricAvailability(fileInfo, offsets)
-	if hasBaseGoRuntimeMetrics(p.goRuntimeMetricMaskByIno[ino]) {
+	if hasBaseGoRuntimeMetrics(p.goRuntimeMetricMaskByExecutable[identity]) {
 		p.registerRuntimeMetricTarget(fileInfo.Pid(), fileInfo.Ns(), fileInfo)
 	} else {
 		p.deleteRuntimeMetricTarget(fileInfo.Pid(), fileInfo.Ns())
@@ -536,18 +676,18 @@ func (p *Tracer) recordGoChannelOffsetAvailability(fileInfo *exec.FileInfo, offs
 		return
 	}
 
-	if p.goChannelOffsetsByIno == nil {
-		p.goChannelOffsetsByIno = map[uint64]bool{}
+	if p.goChannelOffsetsByExecutable == nil {
+		p.goChannelOffsetsByExecutable = map[executableIdentity]bool{}
 	}
 
-	ino := fileInfo.Ino()
+	identity := p.executableIdentity(fileInfo)
 	hasOffsets := offsets.HasGoChannelOffsets()
-	p.goChannelOffsetsByIno[ino] = hasOffsets
-	p.currentBinaryIno = ino
+	p.goChannelOffsetsByExecutable[identity] = hasOffsets
+	p.currentBinary = identity
 
 	if !hasOffsets && p.log != nil {
 		p.log.Debug("skipping Go channel link probes for binary with missing runtime.hchan offsets",
-			"pid", fileInfo.Pid(), "ino", ino, "cmd", fileInfo.CmdExePath())
+			"pid", fileInfo.Pid(), "ino", identity.Ino, "cmd", fileInfo.CmdExePath())
 	}
 }
 
@@ -556,14 +696,14 @@ func (p *Tracer) recordGoRuntimeMetricAvailability(fileInfo *exec.FileInfo, offs
 		return
 	}
 
-	if p.goRuntimeMetricMaskByIno == nil {
-		p.goRuntimeMetricMaskByIno = map[uint64]uint64{}
+	if p.goRuntimeMetricMaskByExecutable == nil {
+		p.goRuntimeMetricMaskByExecutable = map[executableIdentity]uint64{}
 	}
-	if p.goRuntimeGCGoalSourceByIno == nil {
-		p.goRuntimeGCGoalSourceByIno = map[uint64]goRuntimeGCGoalSource{}
+	if p.goRuntimeGCGoalSourceByExecutable == nil {
+		p.goRuntimeGCGoalSourceByExecutable = map[executableIdentity]goRuntimeGCGoalSource{}
 	}
 
-	ino := fileInfo.Ino()
+	identity := p.executableIdentity(fileInfo)
 	mask := goRuntimeMetricMask(offsets)
 	gcGoalSource := selectGoRuntimeGCGoalSource(
 		offsets,
@@ -572,7 +712,7 @@ func (p *Tracer) recordGoRuntimeMetricAvailability(fileInfo *exec.FileInfo, offs
 	if gcGoalSource != goRuntimeGCGoalSourceNone {
 		mask |= goRuntimeMetricMemoryGCGoalMask
 	}
-	p.goRuntimeGCGoalSourceByIno[ino] = gcGoalSource
+	p.goRuntimeGCGoalSourceByExecutable[identity] = gcGoalSource
 	includesSystem, modeKnown := goexec.RuntimeMetricGoroutineCountMode(fileInfo.ELF())
 	if hasGoRuntimeGoroutineCountOffsets(offsets, includesSystem, modeKnown) {
 		mask |= goRuntimeMetricGoroutineCountMask
@@ -581,7 +721,7 @@ func (p *Tracer) recordGoRuntimeMetricAvailability(fileInfo *exec.FileInfo, offs
 	if err != nil && p.log != nil {
 		p.log.Debug("Go runtime memory metric version detection failed",
 			"pid", fileInfo.Pid(),
-			"ino", ino,
+			"ino", identity.Ino,
 			"cmd", fileInfo.CmdExePath(),
 			"error", err)
 	}
@@ -599,18 +739,18 @@ func (p *Tracer) recordGoRuntimeMetricAvailability(fileInfo *exec.FileInfo, offs
 		if p.log != nil {
 			p.log.Warn("Go runtime heap metric symbol unresolved; using scalar fallback",
 				"pid", fileInfo.Pid(),
-				"ino", ino,
+				"ino", identity.Ino,
 				"cmd", fileInfo.CmdExePath(),
 				"missing_probe", goRuntimeMetricHeapSnapshotSymbol,
 				"fallback_probe", goRuntimeMetricGCMarkDoneSymbol)
 		}
 	}
-	p.goRuntimeMetricMaskByIno[ino] = mask
+	p.goRuntimeMetricMaskByExecutable[identity] = mask
 
 	if p.log != nil {
 		p.log.Debug("Go runtime metric availability",
 			"pid", fileInfo.Pid(),
-			"ino", ino,
+			"ino", identity.Ino,
 			"cmd", fileInfo.CmdExePath(),
 			"available_mask", mask,
 			"base_available", hasBaseGoRuntimeMetrics(mask),
@@ -704,7 +844,8 @@ func (p *Tracer) registerRuntimeMetricTarget(pid app.PID, ns uint32, fileInfo *e
 	if fileInfo == nil || p.bpfObjects.GoRuntimeMetricTargets == nil {
 		return
 	}
-	availableMask := p.goRuntimeMetricMaskByIno[fileInfo.Ino()]
+	identity := p.executableIdentity(fileInfo)
+	availableMask := p.goRuntimeMetricMaskByExecutable[identity]
 	if !hasBaseGoRuntimeMetrics(availableMask) {
 		return
 	}
@@ -721,7 +862,7 @@ func (p *Tracer) registerRuntimeMetricTarget(pid app.PID, ns uint32, fileInfo *e
 		return
 	}
 	availableMask = p.goRuntimeMetricMaskForSymbols(fileInfo, availableMask, symbols)
-	p.goRuntimeMetricMaskByIno[fileInfo.Ino()] = availableMask
+	p.goRuntimeMetricMaskByExecutable[identity] = availableMask
 	generation := fileInfo.RuntimeMetricGeneration(pid)
 	if generation == 0 {
 		generation = newRuntimeMetricGeneration()
@@ -738,7 +879,7 @@ func (p *Tracer) registerRuntimeMetricTarget(pid app.PID, ns uint32, fileInfo *e
 		AllglenAddr:                  symbols.AllgLenAddr,
 		AllpAddr:                     symbols.AllpAddr,
 		GoroutineCountIncludesSystem: symbols.GoroutineCountIncludesSystem,
-		GcGoalSource:                 uint32(p.goRuntimeGCGoalSourceByIno[fileInfo.Ino()]),
+		GcGoalSource:                 uint32(p.goRuntimeGCGoalSourceByExecutable[identity]),
 		Generation:                   generation,
 	}
 
@@ -837,11 +978,11 @@ func (p *Tracer) ProcessBinary(fileInfo *exec.FileInfo) {
 		return
 	}
 	if fileInfo == nil {
-		p.currentBinaryIno = 0
+		p.currentBinary = executableIdentity{}
 		return
 	}
 
-	p.currentBinaryIno = fileInfo.Ino()
+	p.currentBinary = p.executableIdentity(fileInfo)
 }
 
 func (p *Tracer) AddCloser(c ...io.Closer) {
@@ -874,6 +1015,10 @@ func GoChannelLinkProbeSymbols() []string {
 // GoRuntimeMetricProbeSymbols returns every candidate used for per-binary runtime metric probes.
 func GoRuntimeMetricProbeSymbols() []string {
 	return append([]string(nil), goRuntimeMetricProbeSymbols...)
+}
+
+func ExecutableIdentityProbeSymbol() string {
+	return executableIdentityProbeSymbol
 }
 
 func (p *Tracer) GoProbes() map[string][]*ebpfcommon.ProbeDesc {
@@ -1323,26 +1468,26 @@ func (p *Tracer) GoProbes() map[string][]*ebpfcommon.ProbeDesc {
 }
 
 func (p *Tracer) goChannelLinkProbesEnabled() bool {
-	if p == nil || p.currentBinaryIno == 0 {
+	if p == nil || p.currentBinary.Ino == 0 {
 		return false
 	}
 
-	return p.goChannelOffsetsByIno[p.currentBinaryIno]
+	return p.goChannelOffsetsByExecutable[p.currentBinary]
 }
 
 func (p *Tracer) goRuntimeHeapSnapshotProbeEnabled() bool {
-	if p == nil || p.currentBinaryIno == 0 {
+	if p == nil || p.currentBinary.Ino == 0 {
 		return false
 	}
 
-	return p.goRuntimeMetricMaskByIno[p.currentBinaryIno]&goRuntimeMetricHeapSnapshotMask != 0
+	return p.goRuntimeMetricMaskByExecutable[p.currentBinary]&goRuntimeMetricHeapSnapshotMask != 0
 }
 
 func (p *Tracer) goRuntimeGCGoalSourceEnabled() bool {
-	if p == nil || p.currentBinaryIno == 0 {
+	if p == nil || p.currentBinary.Ino == 0 {
 		return false
 	}
-	return p.goRuntimeGCGoalSourceByIno[p.currentBinaryIno] ==
+	return p.goRuntimeGCGoalSourceByExecutable[p.currentBinary] ==
 		goRuntimeGCGoalSourcePaceScavengerArgument
 }
 
