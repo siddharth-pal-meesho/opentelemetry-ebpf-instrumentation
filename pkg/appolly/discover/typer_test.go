@@ -20,6 +20,7 @@ import (
 	attr "go.opentelemetry.io/obi/pkg/export/attributes/names"
 	"go.opentelemetry.io/obi/pkg/export/otel/perapp"
 	"go.opentelemetry.io/obi/pkg/internal/ebpf/gotracer"
+	"go.opentelemetry.io/obi/pkg/internal/goexec"
 	"go.opentelemetry.io/obi/pkg/obi"
 	"go.opentelemetry.io/obi/pkg/selection"
 	"go.opentelemetry.io/obi/pkg/transform"
@@ -65,6 +66,21 @@ func TestLoadAllGoFunctionNamesIncludesConditionalGoTracerSymbols(t *testing.T) 
 		assert.Contains(t, ty.allGoFunctions, symbol)
 	}
 	assert.Contains(t, ty.allGoFunctions, gotracer.ExecutableIdentityProbeSymbol())
+	for _, symbol := range gotracer.GoAutoSDKActivationProbeSymbols() {
+		assert.Contains(t, ty.allGoFunctions, symbol)
+	}
+}
+
+func TestContextWithValueDoesNotQualifyGoProxy(t *testing.T) {
+	assert.True(t, isGoProxy(&goexec.Offsets{Funcs: map[string]goexec.FuncOffsets{
+		"runtime.chansend1": {},
+		"context.WithValue": {},
+	}}))
+	assert.False(t, isGoProxy(&goexec.Offsets{Funcs: map[string]goexec.FuncOffsets{
+		"runtime.chansend1":                {},
+		"context.WithValue":                {},
+		"net/http.serverHandler.ServeHTTP": {},
+	}}))
 }
 
 func TestMakeServiceAttrs(t *testing.T) {
@@ -99,6 +115,20 @@ func TestMakeServiceAttrs(t *testing.T) {
 	assert.NotNil(t, attrs2.Sampler)
 	assert.NotNil(t, attrs2.CustomInRouteMatcher)
 	assert.NotNil(t, attrs2.CustomOutRouteMatcher)
+}
+
+func TestMakeServiceAttrsDefaultsSDKLanguageToGeneric(t *testing.T) {
+	pi := services.ProcessInfo{Pid: 1234}
+	proc := &ProcessMatch{
+		Process:  &pi,
+		Criteria: []services.Selector{dummyCriterion{name: "svc1"}},
+	}
+	ty := typer{cfg: &obi.Config{Routes: &transform.RoutesConfig{}}}
+
+	attrs := ty.makeServiceAttrs(proc)
+
+	assert.Equal(t, svc.InstrumentableGeneric, attrs.SDKLanguage)
+	assert.Equal(t, "generic", attrs.SDKLanguage.String())
 }
 
 func TestMakeServiceAttrs_DynamicPIDOptions(t *testing.T) {
@@ -296,7 +326,7 @@ func TestMakeServiceAttrs_FeaturesMatchingMultipleCriteria(t *testing.T) {
 			}
 			ty := typer{cfg: &obi.Config{
 				Routes:  &transform.RoutesConfig{},
-				Metrics: perapp.MetricsConfig{Features: export.FeatureSpanOTel},
+				Metrics: perapp.GlobalMetricsConfig{Features: export.FeatureSpanOTel},
 			}}
 			attrs := ty.makeServiceAttrs(proc)
 			assert.Equal(t, "svc1", attrs.UID.Name)

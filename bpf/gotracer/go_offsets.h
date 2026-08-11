@@ -22,6 +22,7 @@ typedef enum {
     // http
     _url_ptr_pos,
     _path_ptr_pos,
+    _raw_query_ptr_pos,
     _host_ptr_pos,
     _scheme_ptr_pos,
     _method_ptr_pos,
@@ -237,6 +238,8 @@ int obi_capture_go_executable_identity(struct pt_regs *ctx) {
     return 0;
 }
 
+// Attaching this no-op uprobe triggers uprobe_register so the registration
+// kprobe can capture the executable's backing identity.
 SEC("uprobe")
 int obi_resolve_go_executable_identity(struct pt_regs *ctx) {
     (void)ctx;
