@@ -26,6 +26,7 @@ import (
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
+	"golang.org/x/sys/unix"
 
 	"go.opentelemetry.io/otel/attribute"
 
@@ -53,6 +54,20 @@ type runtimeMetricTargetKey struct {
 type executableIdentity = BpfGoExecutableKeyT
 
 const missingGoOffset = ^uint64(0)
+
+// Linux's internal dev_t reserves its lower 20 bits for the minor number.
+const linuxMinorDeviceBits = 20
+
+func kernelDeviceNumber(dev uint64) uint64 {
+	return uint64(unix.Major(dev))<<linuxMinorDeviceBits | uint64(unix.Minor(dev))
+}
+
+func goOffsetsMapKey(fileInfo *exec.FileInfo) executableIdentity {
+	return executableIdentity{
+		Dev: kernelDeviceNumber(fileInfo.Dev()),
+		Ino: fileInfo.Ino(),
+	}
+}
 
 const executableIdentityProbeSymbol = "runtime.sigtrampgo"
 
@@ -337,13 +352,16 @@ func (p *Tracer) ResolveExecutableIdentity(
 }
 
 func (p *Tracer) AllowPID(pid app.PID, ns uint32, fi *exec.FileInfo) {
-	if fi != nil && p.bpfObjects.GoOffsetsByPid != nil {
+	if fi != nil && p.bpfObjects.GoOffsetsMap != nil {
 		identity := p.executableIdentity(fi)
+
 		p.executableIdentityMu.Lock()
-		if offsets, ok := p.goOffsetsByExecutable[identity]; ok {
-			_ = p.bpfObjects.GoOffsetsByPid.Put(uint32(pid), offsets)
-		}
+		offsets, ok := p.goOffsetsByExecutable[identity]
 		p.executableIdentityMu.Unlock()
+
+		if ok {
+			_ = p.bpfObjects.GoOffsetsMap.Put(goOffsetsMapKey(fi), offsets)
+		}
 	}
 	p.pidsFilter.AllowPID(pid, ns, fi, ebpfcommon.PIDTypeGo)
 	p.registerRuntimeMetricTarget(pid, ns, fi)
@@ -352,9 +370,6 @@ func (p *Tracer) AllowPID(pid app.PID, ns uint32, fi *exec.FileInfo) {
 func (p *Tracer) BlockPID(pid app.PID, ns uint32) {
 	p.deleteRuntimeMetricTarget(pid, ns)
 	p.pidsFilter.BlockPID(pid, ns)
-	if p.bpfObjects.GoOffsetsByPid != nil {
-		_ = p.bpfObjects.GoOffsetsByPid.Delete(uint32(pid))
-	}
 	p.executableIdentityMu.Lock()
 	delete(p.executableIdentities, pid)
 	p.executableIdentityMu.Unlock()
@@ -635,7 +650,7 @@ func (p *Tracer) RegisterOffsets(fileInfo *exec.FileInfo, offsets *goexec.Offset
 	}
 
 	identity := p.executableIdentity(fileInfo)
-	if err := p.bpfObjects.GoOffsetsByPid.Put(uint32(fileInfo.Pid()), offTable); err != nil {
+	if err := p.bpfObjects.GoOffsetsMap.Put(goOffsetsMapKey(fileInfo), offTable); err != nil {
 		p.log.Error("setting Go offsets map failed",
 			"pid", fileInfo.Pid(),
 			"error", err)
@@ -646,12 +661,6 @@ func (p *Tracer) RegisterOffsets(fileInfo *exec.FileInfo, offsets *goexec.Offset
 	p.executableIdentityMu.Lock()
 	p.goOffsetsByExecutable[identity] = offTable
 	p.executableIdentityMu.Unlock()
-	if err := p.bpfObjects.GoOffsetsMap.Put(fileInfo.Ino(), offTable); err != nil {
-		p.log.Debug("setting fallback Go offsets map failed",
-			"pid", fileInfo.Pid(),
-			"ino", fileInfo.Ino(),
-			"error", err)
-	}
 
 	p.recordGoRuntimeMetricAvailability(fileInfo, offsets)
 	if hasBaseGoRuntimeMetrics(p.goRuntimeMetricMaskByExecutable[identity]) {
