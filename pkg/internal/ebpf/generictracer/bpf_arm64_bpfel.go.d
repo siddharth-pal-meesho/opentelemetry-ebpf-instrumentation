@@ -117,6 +117,7 @@ pkg/internal/ebpf/generictracer/bpf_arm64_bpfel.go: \
  bpf/generictracer/protocol_http.h \
  bpf/common/trace_lifecycle.h \
  bpf/maps/outgoing_trace_map.h \
+ bpf/maps/trace_id_server_map.h \
  bpf/generictracer/maps/http_info_mem.h \
  bpf/generictracer/large_buf_tailcall.h \
  bpf/maps/connection_tracker.h \
@@ -397,6 +398,8 @@ bpf/generictracer/protocol_http.h:
 bpf/common/trace_lifecycle.h:
 
 bpf/maps/outgoing_trace_map.h:
+
+bpf/maps/trace_id_server_map.h:
 
 bpf/generictracer/maps/http_info_mem.h:
 

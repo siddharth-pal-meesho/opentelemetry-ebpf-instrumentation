@@ -113,6 +113,7 @@ pkg/internal/ebpf/gotracer/bpf_arm64_bpfel.go: \
  bpf/common/cp_support_data.h \
  bpf/maps/java_vt_threads.h \
  bpf/maps/server_traces.h \
+ bpf/maps/trace_id_server_map.h \
  bpf/common/trace_parent.h \
  bpf/common/python_task.h \
  bpf/maps/python_context_task.h \
@@ -376,6 +377,8 @@ bpf/common/cp_support_data.h:
 bpf/maps/java_vt_threads.h:
 
 bpf/maps/server_traces.h:
+
+bpf/maps/trace_id_server_map.h:
 
 bpf/common/trace_parent.h:
 

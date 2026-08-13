@@ -323,6 +323,13 @@ type BpfPidKeyT struct {
 	Ns  uint32
 }
 
+type BpfPidServerStateT struct {
+	_    structs.HostLayout
+	Live uint32
+	Pad  [4]uint8
+	Tp   BpfTpInfoPidT
+}
+
 type BpfProtocolType uint8
 
 const (
@@ -472,6 +479,12 @@ type BpfTpInfoT struct {
 	Ts       uint64
 	Flags    uint8
 	Pad      [7]uint8
+}
+
+type BpfTraceIdKeyT struct {
+	_       structs.HostLayout
+	Pid     uint32
+	TraceId [16]uint8
 }
 
 type BpfTraceKeyT struct {
@@ -668,6 +681,7 @@ type BpfMapSpecs struct {
 	OngoingTcpReq              *ebpf.MapSpec `ebpf:"ongoing_tcp_req"`
 	OutgoingTraceMap           *ebpf.MapSpec `ebpf:"outgoing_trace_map"`
 	PidCache                   *ebpf.MapSpec `ebpf:"pid_cache"`
+	PidServerStateMap          *ebpf.MapSpec `ebpf:"pid_server_state_map"`
 	PidTidToConn               *ebpf.MapSpec `ebpf:"pid_tid_to_conn"`
 	ProtocolArgsMem            *ebpf.MapSpec `ebpf:"protocol_args_mem"`
 	ProtocolCache              *ebpf.MapSpec `ebpf:"protocol_cache"`
@@ -690,6 +704,7 @@ type BpfMapSpecs struct {
 	TpCharBufStorage           *ebpf.MapSpec `ebpf:"tp_char_buf_storage"`
 	TpInfoBackupStorage        *ebpf.MapSpec `ebpf:"tp_info_backup_storage"`
 	TpInfoStorage              *ebpf.MapSpec `ebpf:"tp_info_storage"`
+	TraceIdServerMap           *ebpf.MapSpec `ebpf:"trace_id_server_map"`
 	TraceMap                   *ebpf.MapSpec `ebpf:"trace_map"`
 	TracesCtxV1                *ebpf.MapSpec `ebpf:"traces_ctx_v1"`
 	UnreadableBufferPorts      *ebpf.MapSpec `ebpf:"unreadable_buffer_ports"`
@@ -817,6 +832,7 @@ type BpfMaps struct {
 	OngoingTcpReq              *ebpf.Map `ebpf:"ongoing_tcp_req"`
 	OutgoingTraceMap           *ebpf.Map `ebpf:"outgoing_trace_map"`
 	PidCache                   *ebpf.Map `ebpf:"pid_cache"`
+	PidServerStateMap          *ebpf.Map `ebpf:"pid_server_state_map"`
 	PidTidToConn               *ebpf.Map `ebpf:"pid_tid_to_conn"`
 	ProtocolArgsMem            *ebpf.Map `ebpf:"protocol_args_mem"`
 	ProtocolCache              *ebpf.Map `ebpf:"protocol_cache"`
@@ -839,6 +855,7 @@ type BpfMaps struct {
 	TpCharBufStorage           *ebpf.Map `ebpf:"tp_char_buf_storage"`
 	TpInfoBackupStorage        *ebpf.Map `ebpf:"tp_info_backup_storage"`
 	TpInfoStorage              *ebpf.Map `ebpf:"tp_info_storage"`
+	TraceIdServerMap           *ebpf.Map `ebpf:"trace_id_server_map"`
 	TraceMap                   *ebpf.Map `ebpf:"trace_map"`
 	TracesCtxV1                *ebpf.Map `ebpf:"traces_ctx_v1"`
 	UnreadableBufferPorts      *ebpf.Map `ebpf:"unreadable_buffer_ports"`
@@ -904,6 +921,7 @@ func (m *BpfMaps) Close() error {
 		m.OngoingTcpReq,
 		m.OutgoingTraceMap,
 		m.PidCache,
+		m.PidServerStateMap,
 		m.PidTidToConn,
 		m.ProtocolArgsMem,
 		m.ProtocolCache,
@@ -926,6 +944,7 @@ func (m *BpfMaps) Close() error {
 		m.TpCharBufStorage,
 		m.TpInfoBackupStorage,
 		m.TpInfoStorage,
+		m.TraceIdServerMap,
 		m.TraceMap,
 		m.TracesCtxV1,
 		m.UnreadableBufferPorts,
