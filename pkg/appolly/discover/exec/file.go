@@ -86,7 +86,10 @@ func (fi *FileInfo) ServiceAttrs() svc.Attrs {
 
 	out := fi.service
 	out.Metadata = maps.Clone(fi.service.Metadata)
-	out.EnvVars = maps.Clone(fi.service.EnvVars)
+	// EnvVars is shared, not cloned: it is only ever replaced wholesale under
+	// lock (ApplyEnvVariables) and never mutated in place by any reader.
+	// ServiceAttrs is called once per span, so cloning here dominated the
+	// process heap (a full env-map copy attached to every in-flight span).
 
 	// no need to clone the other fields as they are immutable
 	return out
