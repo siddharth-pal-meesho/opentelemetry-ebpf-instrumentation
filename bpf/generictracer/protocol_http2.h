@@ -243,13 +243,14 @@ static __always_inline void http2_grpc_start(void *ctx,
     }
 
     // Stash the correlated tp and parse the HEADERS frame for an app-written
-    // traceparent (in-process instrumentation, e.g. OTel agents), tail-called
-    // like the server side to stay under the verifier instruction limit on
-    // 5.15. The commit stage merges both.
+    // traceparent (in-process instrumentation, e.g. OTel agents) via the
+    // SAME parse/finalize tail calls the server side uses (their commit
+    // stage branches back to the client commit by h2g_info->type). The
+    // commit stage merges both tps.
     h2g_info->tp = tp_p->tp;
     bpf_memset(tp_p->tp.trace_id, 0, sizeof(tp_p->tp.trace_id));
     bpf_memset(tp_p->tp.parent_id, 0, sizeof(tp_p->tp.parent_id));
-    bpf_tail_call(ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_client);
+    bpf_tail_call(ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_server);
 
     // Tail call failed: restore the correlated tp and finalize as before
     tp_p->tp = h2g_info->tp;
@@ -410,7 +411,12 @@ int obi_protocol_http2_grpc_handle_start_frame_server(void *ctx) {
     u32 hpack_off;
     const u32 hpack_len = h2_hpack_window(h2g_info, &hpack_off);
     if (!parse_hpack_traceparent(h2g_info->data + hpack_off, hpack_len, &tp_p->tp)) {
-        find_trace_for_server_request(&g_ctx->stream.pid_conn.conn, &tp_p->tp, EVENT_HTTP_REQUEST);
+        // shared with CLIENT streams (commit stage branches by type): the
+        // incoming-connection fallback only applies to server requests
+        if (h2g_info->type != EVENT_HTTP_CLIENT) {
+            find_trace_for_server_request(
+                &g_ctx->stream.pid_conn.conn, &tp_p->tp, EVENT_HTTP_REQUEST);
+        }
     }
 
     bpf_tail_call(ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_server_finalize);
@@ -435,6 +441,10 @@ int obi_protocol_http2_grpc_handle_start_frame_server_finalize(void *ctx) {
         find_hpack_traceparent_value(h2g_info->data + hpack_off, hpack_len, &tp_p->tp);
     }
 
+    if (h2g_info->type == EVENT_HTTP_CLIENT) {
+        bpf_tail_call(
+            ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_client_commit);
+    }
     bpf_tail_call(ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_server_commit);
     return 0;
 }
@@ -462,50 +472,6 @@ int obi_protocol_http2_grpc_handle_start_frame_server_commit(void *ctx) {
     http2_grpc_start_finalize_server(
         &g_ctx->stream, h2g_info, tp_p, found_tp, g_ctx->args.ssl, g_ctx->args.orig_dport);
 
-    return 0;
-}
-
-// CLIENT tail call: parse an app-written traceparent from the HEADERS frame
-// (literal HPACK entry), mirroring the server split for the verifier limit
-SEC("kprobe/http2")
-int obi_protocol_http2_grpc_handle_start_frame_client(void *ctx) {
-    http2_grpc_request_t *h2g_info = http2_info_mem();
-    if (!h2g_info) {
-        return 0;
-    }
-    tp_info_pid_t *tp_p = tp_info_mem();
-    if (!tp_p) {
-        return 0;
-    }
-
-    u32 hpack_off;
-    const u32 hpack_len = h2_hpack_window(h2g_info, &hpack_off);
-    parse_hpack_traceparent(h2g_info->data + hpack_off, hpack_len, &tp_p->tp);
-
-    bpf_tail_call(
-        ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_client_finalize);
-    return 0;
-}
-
-// CLIENT finalize: dyn-table traceparent scan if the literal parse missed
-SEC("kprobe/http2")
-int obi_protocol_http2_grpc_handle_start_frame_client_finalize(void *ctx) {
-    http2_grpc_request_t *h2g_info = http2_info_mem();
-    if (!h2g_info) {
-        return 0;
-    }
-    tp_info_pid_t *tp_p = tp_info_mem();
-    if (!tp_p) {
-        return 0;
-    }
-
-    if (!valid_trace(tp_p->tp.trace_id)) {
-        u32 hpack_off;
-        const u32 hpack_len = h2_hpack_window(h2g_info, &hpack_off);
-        find_hpack_traceparent_value(h2g_info->data + hpack_off, hpack_len, &tp_p->tp);
-    }
-
-    bpf_tail_call(ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_client_commit);
     return 0;
 }
 
