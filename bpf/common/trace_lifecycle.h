@@ -11,18 +11,80 @@
 #include <common/trace_key.h>
 #include <common/tracing.h>
 
+#include <common/trace_helpers.h>
+
 #include <maps/cp_support_connect_info.h>
 #include <maps/incoming_trace_map.h>
 #include <maps/java_vt_threads.h>
 #include <maps/outgoing_trace_map.h>
 #include <maps/server_traces.h>
+#include <maps/trace_id_server_map.h>
 
 #include <gotracer/go_common.h>
 
 #include <shared/obi_ctx.h>
 
+static __always_inline void trace_id_server_request_start(u32 host_pid, const tp_info_pid_t *tp_p) {
+    trace_id_key_t tid_key = {.pid = host_pid};
+    __builtin_memcpy(tid_key.trace_id, tp_p->tp.trace_id, sizeof(tid_key.trace_id));
+    bpf_map_update_elem(&trace_id_server_map, &tid_key, tp_p, BPF_ANY);
+
+    pid_server_state_t *state = bpf_map_lookup_elem(&pid_server_state_map, &host_pid);
+    if (state) {
+        if (state->live > MAX_CONCURRENT_SHARED_REQUESTS) {
+            // self-heal from a rare concurrent-decrement underflow: real live
+            // request counts cannot exceed the map capacity
+            state->live = 0;
+        }
+        __sync_fetch_and_add(&state->live, 1);
+        state->tp = *tp_p;
+    } else {
+        pid_server_state_t new_state = {.live = 1, .tp = *tp_p};
+        bpf_map_update_elem(&pid_server_state_map, &host_pid, &new_state, BPF_NOEXIST);
+    }
+}
+
+static __always_inline void trace_id_server_request_end(u32 host_pid, const tp_info_pid_t *tp_p) {
+    trace_id_key_t tid_key = {.pid = host_pid};
+    __builtin_memcpy(tid_key.trace_id, tp_p->tp.trace_id, sizeof(tid_key.trace_id));
+    bpf_map_delete_elem(&trace_id_server_map, &tid_key);
+
+    pid_server_state_t *state = bpf_map_lookup_elem(&pid_server_state_map, &host_pid);
+    if (state && state->live > 0) {
+        __sync_fetch_and_add(&state->live, -1);
+    }
+}
+
+// Finds the parent server request for a client request whose traceparent was
+// written by in-process instrumentation: first by trace id, then falling
+// back to the only live server request of the process when there is exactly
+// one. Returns 1 and sets tp->parent_id on success.
+static __always_inline u8 find_server_for_client_trace_id(u32 host_pid, tp_info_t *tp) {
+    trace_id_key_t tid_key = {.pid = host_pid};
+    __builtin_memcpy(tid_key.trace_id, tp->trace_id, sizeof(tid_key.trace_id));
+
+    const tp_info_pid_t *server_tp = bpf_map_lookup_elem(&trace_id_server_map, &tid_key);
+    if (server_tp && server_tp->valid && should_be_in_same_transaction(&server_tp->tp, tp)) {
+        __builtin_memcpy(tp->parent_id, server_tp->tp.span_id, sizeof(tp->parent_id));
+        return 1;
+    }
+
+    const pid_server_state_t *state = bpf_map_lookup_elem(&pid_server_state_map, &host_pid);
+    if (state && state->live == 1 && state->tp.valid && valid_trace(state->tp.tp.trace_id) &&
+        should_be_in_same_transaction(&state->tp.tp, tp)) {
+        __builtin_memcpy(tp->parent_id, state->tp.tp.span_id, sizeof(tp->parent_id));
+        return 1;
+    }
+
+    return 0;
+}
+
 static __always_inline void delete_server_trace(pid_connection_info_t *pid_conn,
                                                 trace_key_t *t_key) {
+    const tp_info_pid_t *existing = bpf_map_lookup_elem(&server_traces, t_key);
+    if (existing) {
+        trace_id_server_request_end(pid_conn->pid, existing);
+    }
     delete_trace_info_for_connection(&pid_conn->conn, TRACE_TYPE_SERVER);
     int res = bpf_map_delete_elem(&server_traces, t_key);
     bpf_dbg_printk("Deleting server span for id=%llx, pid=%d, ns=%x",
@@ -131,6 +193,7 @@ static __always_inline void server_or_client_trace(const u8 type,
                        conn_part.port);
 
         bpf_map_update_elem(&server_traces_aux, &conn_part, tp_p, BPF_ANY);
+        trace_id_server_request_start(host_pid, tp_p);
 
         tp_info_pid_t *existing = bpf_map_lookup_elem(&server_traces, &t_key);
         if (existing && (existing->req_type == tp_p->req_type) &&
