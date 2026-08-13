@@ -587,6 +587,9 @@ type BpfProgramSpecs struct {
 	ObiProtocolHttp2GrpcFrames                         *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_frames"`
 	ObiProtocolHttp2GrpcHandleEndFrame                 *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_end_frame"`
 	ObiProtocolHttp2GrpcHandleStartFrame               *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame"`
+	ObiProtocolHttp2GrpcHandleStartFrameClient         *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client"`
+	ObiProtocolHttp2GrpcHandleStartFrameClientCommit   *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client_commit"`
+	ObiProtocolHttp2GrpcHandleStartFrameClientFinalize *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client_finalize"`
 	ObiProtocolHttp2GrpcHandleStartFrameServer         *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server"`
 	ObiProtocolHttp2GrpcHandleStartFrameServerCommit   *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server_commit"`
 	ObiProtocolHttp2GrpcHandleStartFrameServerFinalize *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server_finalize"`
@@ -1039,6 +1042,9 @@ type BpfPrograms struct {
 	ObiProtocolHttp2GrpcFrames                         *ebpf.Program `ebpf:"obi_protocol_http2_grpc_frames"`
 	ObiProtocolHttp2GrpcHandleEndFrame                 *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_end_frame"`
 	ObiProtocolHttp2GrpcHandleStartFrame               *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame"`
+	ObiProtocolHttp2GrpcHandleStartFrameClient         *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client"`
+	ObiProtocolHttp2GrpcHandleStartFrameClientCommit   *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client_commit"`
+	ObiProtocolHttp2GrpcHandleStartFrameClientFinalize *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client_finalize"`
 	ObiProtocolHttp2GrpcHandleStartFrameServer         *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server"`
 	ObiProtocolHttp2GrpcHandleStartFrameServerCommit   *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server_commit"`
 	ObiProtocolHttp2GrpcHandleStartFrameServerFinalize *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server_finalize"`
@@ -1113,6 +1119,9 @@ func (p *BpfPrograms) Close() error {
 		p.ObiProtocolHttp2GrpcFrames,
 		p.ObiProtocolHttp2GrpcHandleEndFrame,
 		p.ObiProtocolHttp2GrpcHandleStartFrame,
+		p.ObiProtocolHttp2GrpcHandleStartFrameClient,
+		p.ObiProtocolHttp2GrpcHandleStartFrameClientCommit,
+		p.ObiProtocolHttp2GrpcHandleStartFrameClientFinalize,
 		p.ObiProtocolHttp2GrpcHandleStartFrameServer,
 		p.ObiProtocolHttp2GrpcHandleStartFrameServerCommit,
 		p.ObiProtocolHttp2GrpcHandleStartFrameServerFinalize,
