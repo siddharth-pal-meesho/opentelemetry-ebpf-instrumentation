@@ -125,6 +125,34 @@ static __always_inline void http2_grpc_start_finalize_server(http2_conn_stream_t
     bpf_map_update_elem(&ongoing_http2_grpc, s_key, h2g_info, BPF_ANY);
 }
 
+// CLIENT finalize: shared post-branch tail of http2_grpc_start
+static __always_inline void http2_grpc_start_finalize_client(http2_conn_stream_t *s_key,
+                                                             http2_grpc_request_t *h2g_info,
+                                                             tp_info_pid_t *tp_p,
+                                                             u8 found_tp,
+                                                             u8 ssl,
+                                                             u16 orig_dport) {
+    if (!found_tp) {
+        new_trace_id(&tp_p->tp);
+        bpf_memset(tp_p->tp.parent_id, 0, sizeof(tp_p->tp.parent_id));
+    }
+
+    h2g_info->tp = tp_p->tp;
+
+    set_trace_info_for_connection(&h2g_info->conn_info, TRACE_TYPE_CLIENT, tp_p);
+    // BPF_NOEXIST so a Go uprobe's HPACK-injected entry (written=1) isn't clobbered
+    server_or_client_trace(EVENT_HTTP_CLIENT,
+                           &h2g_info->conn_info,
+                           k_lw_thread_none,
+                           tp_p,
+                           ssl,
+                           orig_dport,
+                           s_key->stream_id,
+                           BPF_NOEXIST);
+
+    bpf_map_update_elem(&ongoing_http2_grpc, s_key, h2g_info, BPF_ANY);
+}
+
 static __always_inline void http2_grpc_start(void *ctx,
                                              http2_conn_stream_t *s_key,
                                              void *u_buf,
@@ -214,25 +242,18 @@ static __always_inline void http2_grpc_start(void *ctx,
         found_tp = 1;
     }
 
-    if (!found_tp) {
-        new_trace_id(&tp_p->tp);
-        bpf_memset(tp_p->tp.parent_id, 0, sizeof(tp_p->tp.parent_id));
-    }
-
+    // Stash the correlated tp and parse the HEADERS frame for an app-written
+    // traceparent (in-process instrumentation, e.g. OTel agents), tail-called
+    // like the server side to stay under the verifier instruction limit on
+    // 5.15. The commit stage merges both.
     h2g_info->tp = tp_p->tp;
+    bpf_memset(tp_p->tp.trace_id, 0, sizeof(tp_p->tp.trace_id));
+    bpf_memset(tp_p->tp.parent_id, 0, sizeof(tp_p->tp.parent_id));
+    bpf_tail_call(ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_client);
 
-    set_trace_info_for_connection(&h2g_info->conn_info, TRACE_TYPE_CLIENT, tp_p);
-    // BPF_NOEXIST so a Go uprobe's HPACK-injected entry (written=1) isn't clobbered
-    server_or_client_trace(EVENT_HTTP_CLIENT,
-                           &h2g_info->conn_info,
-                           k_lw_thread_none,
-                           tp_p,
-                           ssl,
-                           orig_dport,
-                           s_key->stream_id,
-                           BPF_NOEXIST);
-
-    bpf_map_update_elem(&ongoing_http2_grpc, s_key, h2g_info, BPF_ANY);
+    // Tail call failed: restore the correlated tp and finalize as before
+    tp_p->tp = h2g_info->tp;
+    http2_grpc_start_finalize_client(s_key, h2g_info, tp_p, found_tp, ssl, orig_dport);
 }
 
 static __always_inline void
@@ -441,6 +462,99 @@ int obi_protocol_http2_grpc_handle_start_frame_server_commit(void *ctx) {
     http2_grpc_start_finalize_server(
         &g_ctx->stream, h2g_info, tp_p, found_tp, g_ctx->args.ssl, g_ctx->args.orig_dport);
 
+    return 0;
+}
+
+// CLIENT tail call: parse an app-written traceparent from the HEADERS frame
+// (literal HPACK entry), mirroring the server split for the verifier limit
+SEC("kprobe/http2")
+int obi_protocol_http2_grpc_handle_start_frame_client(void *ctx) {
+    http2_grpc_request_t *h2g_info = http2_info_mem();
+    if (!h2g_info) {
+        return 0;
+    }
+    tp_info_pid_t *tp_p = tp_info_mem();
+    if (!tp_p) {
+        return 0;
+    }
+
+    u32 hpack_off;
+    const u32 hpack_len = h2_hpack_window(h2g_info, &hpack_off);
+    parse_hpack_traceparent(h2g_info->data + hpack_off, hpack_len, &tp_p->tp);
+
+    bpf_tail_call(
+        ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_client_finalize);
+    return 0;
+}
+
+// CLIENT finalize: dyn-table traceparent scan if the literal parse missed
+SEC("kprobe/http2")
+int obi_protocol_http2_grpc_handle_start_frame_client_finalize(void *ctx) {
+    http2_grpc_request_t *h2g_info = http2_info_mem();
+    if (!h2g_info) {
+        return 0;
+    }
+    tp_info_pid_t *tp_p = tp_info_mem();
+    if (!tp_p) {
+        return 0;
+    }
+
+    if (!valid_trace(tp_p->tp.trace_id)) {
+        u32 hpack_off;
+        const u32 hpack_len = h2_hpack_window(h2g_info, &hpack_off);
+        find_hpack_traceparent_value(h2g_info->data + hpack_off, hpack_len, &tp_p->tp);
+    }
+
+    bpf_tail_call(ctx, &jump_table, k_tail_protocol_http2_grpc_handle_start_frame_client_commit);
+    return 0;
+}
+
+// CLIENT commit: merge the parsed traceparent with the correlated tp stashed
+// in h2g_info->tp, then finalize
+SEC("kprobe/http2")
+int obi_protocol_http2_grpc_handle_start_frame_client_commit(void *ctx) {
+    (void)ctx;
+    grpc_frames_ctx_t *g_ctx = grpc_ctx();
+    if (!g_ctx) {
+        return 0;
+    }
+    http2_grpc_request_t *h2g_info = http2_info_mem();
+    if (!h2g_info) {
+        return 0;
+    }
+    tp_info_pid_t *tp_p = tp_info_mem();
+    if (!tp_p) {
+        return 0;
+    }
+
+    const tp_info_t corr = h2g_info->tp; // thread- or uprobe-correlated
+    const u8 corr_found = valid_trace(corr.trace_id);
+    u8 found_tp = 1;
+
+    if (valid_trace(tp_p->tp.trace_id)) {
+        // In-process instrumentation wrote this traceparent: the downstream
+        // server reports its span id (stored in parent_id by the parser) as
+        // parent, so adopt it as this client span's id to keep the
+        // cross-service parent chain intact.
+        bpf_memcpy(tp_p->tp.span_id, tp_p->tp.parent_id, SPAN_ID_SIZE_BYTES);
+        if (corr_found &&
+            bpf_memcmp(corr.trace_id, tp_p->tp.trace_id, TRACE_ID_SIZE_BYTES) == 0) {
+            bpf_memcpy(tp_p->tp.parent_id, corr.parent_id, SPAN_ID_SIZE_BYTES);
+        } else {
+            // async runtime hopped threads: re-parent via the live server
+            // request with this trace id (single-live fallback inside)
+            bpf_memset(tp_p->tp.parent_id, 0, sizeof(tp_p->tp.parent_id));
+            find_server_for_client_trace_id(g_ctx->stream.pid_conn.pid, &tp_p->tp);
+        }
+    } else if (corr_found) {
+        tp_p->tp = corr;
+    } else {
+        found_tp = 0;
+        tp_p->tp = corr; // restore ts/span id; finalize mints the trace id
+    }
+
+    http2_grpc_start_finalize_client(
+        &g_ctx->stream, h2g_info, tp_p, found_tp, g_ctx->args.ssl, g_ctx->args.orig_dport);
     return 0;
 }
 

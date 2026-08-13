@@ -444,6 +444,13 @@ type BpfPidKeyT struct {
 	Ns  uint32
 }
 
+type BpfPidServerStateT struct {
+	_    structs.HostLayout
+	Live uint32
+	Pad  [4]uint8
+	Tp   BpfTpInfoPidT
+}
+
 type BpfProduceReqT struct {
 	_               structs.HostLayout
 	MsgPtr          uint64
@@ -618,6 +625,12 @@ type BpfTpInfoT struct {
 	Pad      [7]uint8
 }
 
+type BpfTraceIdKeyT struct {
+	_       structs.HostLayout
+	Pid     uint32
+	TraceId [16]uint8
+}
+
 type BpfTraceKeyT struct {
 	_       structs.HostLayout
 	ExtraId uint64
@@ -706,6 +719,9 @@ type BpfProgramSpecs struct {
 	ObiProtocolHttp2GrpcFrames                         *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_frames"`
 	ObiProtocolHttp2GrpcHandleEndFrame                 *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_end_frame"`
 	ObiProtocolHttp2GrpcHandleStartFrame               *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame"`
+	ObiProtocolHttp2GrpcHandleStartFrameClient         *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client"`
+	ObiProtocolHttp2GrpcHandleStartFrameClientCommit   *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client_commit"`
+	ObiProtocolHttp2GrpcHandleStartFrameClientFinalize *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client_finalize"`
 	ObiProtocolHttp2GrpcHandleStartFrameServer         *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server"`
 	ObiProtocolHttp2GrpcHandleStartFrameServerCommit   *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server_commit"`
 	ObiProtocolHttp2GrpcHandleStartFrameServerFinalize *ebpf.ProgramSpec `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server_finalize"`
@@ -907,6 +923,7 @@ type BpfMapSpecs struct {
 	OngoingWriteSubsets            *ebpf.MapSpec `ebpf:"ongoing_write_subsets"`
 	OutgoingTraceMap               *ebpf.MapSpec `ebpf:"outgoing_trace_map"`
 	PendingH2Invocations           *ebpf.MapSpec `ebpf:"pending_h2_invocations"`
+	PidServerStateMap              *ebpf.MapSpec `ebpf:"pid_server_state_map"`
 	PqHostnames                    *ebpf.MapSpec `ebpf:"pq_hostnames"`
 	ProduceRequests                *ebpf.MapSpec `ebpf:"produce_requests"`
 	ProduceTraceparents            *ebpf.MapSpec `ebpf:"produce_traceparents"`
@@ -930,6 +947,7 @@ type BpfMapSpecs struct {
 	TpCharBufStorage               *ebpf.MapSpec `ebpf:"tp_char_buf_storage"`
 	TpInfoBackupStorage            *ebpf.MapSpec `ebpf:"tp_info_backup_storage"`
 	TpInfoStorage                  *ebpf.MapSpec `ebpf:"tp_info_storage"`
+	TraceIdServerMap               *ebpf.MapSpec `ebpf:"trace_id_server_map"`
 	TraceMap                       *ebpf.MapSpec `ebpf:"trace_map"`
 	TracesCtxV1                    *ebpf.MapSpec `ebpf:"traces_ctx_v1"`
 	TransportNewClientInvocations  *ebpf.MapSpec `ebpf:"transport_new_client_invocations"`
@@ -1079,6 +1097,7 @@ type BpfMaps struct {
 	OngoingWriteSubsets            *ebpf.Map `ebpf:"ongoing_write_subsets"`
 	OutgoingTraceMap               *ebpf.Map `ebpf:"outgoing_trace_map"`
 	PendingH2Invocations           *ebpf.Map `ebpf:"pending_h2_invocations"`
+	PidServerStateMap              *ebpf.Map `ebpf:"pid_server_state_map"`
 	PqHostnames                    *ebpf.Map `ebpf:"pq_hostnames"`
 	ProduceRequests                *ebpf.Map `ebpf:"produce_requests"`
 	ProduceTraceparents            *ebpf.Map `ebpf:"produce_traceparents"`
@@ -1102,6 +1121,7 @@ type BpfMaps struct {
 	TpCharBufStorage               *ebpf.Map `ebpf:"tp_char_buf_storage"`
 	TpInfoBackupStorage            *ebpf.Map `ebpf:"tp_info_backup_storage"`
 	TpInfoStorage                  *ebpf.Map `ebpf:"tp_info_storage"`
+	TraceIdServerMap               *ebpf.Map `ebpf:"trace_id_server_map"`
 	TraceMap                       *ebpf.Map `ebpf:"trace_map"`
 	TracesCtxV1                    *ebpf.Map `ebpf:"traces_ctx_v1"`
 	TransportNewClientInvocations  *ebpf.Map `ebpf:"transport_new_client_invocations"`
@@ -1190,6 +1210,7 @@ func (m *BpfMaps) Close() error {
 		m.OngoingWriteSubsets,
 		m.OutgoingTraceMap,
 		m.PendingH2Invocations,
+		m.PidServerStateMap,
 		m.PqHostnames,
 		m.ProduceRequests,
 		m.ProduceTraceparents,
@@ -1213,6 +1234,7 @@ func (m *BpfMaps) Close() error {
 		m.TpCharBufStorage,
 		m.TpInfoBackupStorage,
 		m.TpInfoStorage,
+		m.TraceIdServerMap,
 		m.TraceMap,
 		m.TracesCtxV1,
 		m.TransportNewClientInvocations,
@@ -1278,6 +1300,9 @@ type BpfPrograms struct {
 	ObiProtocolHttp2GrpcFrames                         *ebpf.Program `ebpf:"obi_protocol_http2_grpc_frames"`
 	ObiProtocolHttp2GrpcHandleEndFrame                 *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_end_frame"`
 	ObiProtocolHttp2GrpcHandleStartFrame               *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame"`
+	ObiProtocolHttp2GrpcHandleStartFrameClient         *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client"`
+	ObiProtocolHttp2GrpcHandleStartFrameClientCommit   *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client_commit"`
+	ObiProtocolHttp2GrpcHandleStartFrameClientFinalize *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_client_finalize"`
 	ObiProtocolHttp2GrpcHandleStartFrameServer         *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server"`
 	ObiProtocolHttp2GrpcHandleStartFrameServerCommit   *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server_commit"`
 	ObiProtocolHttp2GrpcHandleStartFrameServerFinalize *ebpf.Program `ebpf:"obi_protocol_http2_grpc_handle_start_frame_server_finalize"`
@@ -1408,6 +1433,9 @@ func (p *BpfPrograms) Close() error {
 		p.ObiProtocolHttp2GrpcFrames,
 		p.ObiProtocolHttp2GrpcHandleEndFrame,
 		p.ObiProtocolHttp2GrpcHandleStartFrame,
+		p.ObiProtocolHttp2GrpcHandleStartFrameClient,
+		p.ObiProtocolHttp2GrpcHandleStartFrameClientCommit,
+		p.ObiProtocolHttp2GrpcHandleStartFrameClientFinalize,
 		p.ObiProtocolHttp2GrpcHandleStartFrameServer,
 		p.ObiProtocolHttp2GrpcHandleStartFrameServerCommit,
 		p.ObiProtocolHttp2GrpcHandleStartFrameServerFinalize,

@@ -10,7 +10,7 @@ struct {
     __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
     __type(key, u32);
     __type(value, u32);
-    __uint(max_entries, 16);
+    __uint(max_entries, 32);
 } jump_table SEC(".maps");
 
 enum {
@@ -34,4 +34,7 @@ enum {
     // Large buffer multi-batch emission
     k_tail_large_buf_emit_continue = 13,
     k_tail_protocol_http2_grpc_handle_start_frame_server_commit = 14,
+    k_tail_protocol_http2_grpc_handle_start_frame_client = 15,
+    k_tail_protocol_http2_grpc_handle_start_frame_client_finalize = 16,
+    k_tail_protocol_http2_grpc_handle_start_frame_client_commit = 17,
 };

@@ -505,10 +505,22 @@ __obi_continue_protocol_http_tp(struct pt_regs *ctx,
                 decode_hex((unsigned char *)&tp_p->tp.flags, f_id, FLAGS_CHAR_LEN);
                 if (meta && meta->type != EVENT_HTTP_CLIENT) {
                     decode_hex(tp_p->tp.parent_id, s_id, SPAN_ID_CHAR_LEN);
-                } else if (previous_trace_id &&
-                           bpf_memcmp(previous_trace_id, tp_p->tp.trace_id, TRACE_ID_SIZE_BYTES) !=
-                               0) {
-                    __builtin_memset(tp_p->tp.parent_id, 0, sizeof(tp_p->tp.parent_id));
+                } else {
+                    // A traceparent already present in an outgoing request was
+                    // written by in-process instrumentation (e.g. an OTel SDK
+                    // or agent): the downstream server will report its span id
+                    // as parent, so adopt it as this client span's id to keep
+                    // the cross-service parent chain intact.
+                    decode_hex(tp_p->tp.span_id, s_id, SPAN_ID_CHAR_LEN);
+                    if (previous_trace_id &&
+                        bpf_memcmp(previous_trace_id, tp_p->tp.trace_id, TRACE_ID_SIZE_BYTES) !=
+                            0) {
+                        // The thread-correlated parent belongs to another
+                        // trace (async runtime hopped threads): re-parent via
+                        // the live server request with this trace id.
+                        __builtin_memset(tp_p->tp.parent_id, 0, sizeof(tp_p->tp.parent_id));
+                        find_server_for_client_trace_id(args->pid_conn.pid, &tp_p->tp);
+                    }
                 }
 
                 if (g_bpf_debug) {
