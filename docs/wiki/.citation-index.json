@@ -1,0 +1,885 @@
+{
+  "built_against_sha": "724e96d5baf0",
+  "built_at": "2026-08-13T14:54:59+00:00",
+  "by_file": {
+    "cmd/obi/main.go": {
+      "loadConfig": [
+        "docs/wiki/pages/02-ENTRYPOINT.md"
+      ],
+      "main": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/02-ENTRYPOINT.md",
+        "docs/wiki/pages/09-BUILD-AND-VALIDATION.md"
+      ]
+    },
+    "pkg/appolly/discover/dynamic_pid_selector.go": {
+      "DynamicPIDSelector": [
+        "docs/wiki/pages/03-DISCOVERY.md",
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ]
+    },
+    "pkg/appolly/discover/finder.go": {
+      "NewProcessFinder": [
+        "docs/wiki/pages/03-DISCOVERY.md"
+      ],
+      "ProcessFinder.Start": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/03-DISCOVERY.md",
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md",
+        "docs/wiki/pages/discovery/selection-and-typing.md",
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "newCommonTracersGroup": [
+        "docs/wiki/pages/03-DISCOVERY.md",
+        "docs/wiki/pages/ebpf/context-propagation.md"
+      ],
+      "newGenericTracersGroup": [
+        "docs/wiki/pages/03-DISCOVERY.md",
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ],
+      "newGoTracersGroup": [
+        "docs/wiki/pages/03-DISCOVERY.md",
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ]
+    },
+    "pkg/appolly/discover/matcher.go": {
+      "FindingCriteria": [
+        "docs/wiki/pages/03-DISCOVERY.md",
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ],
+      "OnlyDefinesDeprecatedServiceSelection": [
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ]
+    },
+    "pkg/appolly/discover/typer.go": {
+      "ExecTyperProvider": [
+        "docs/wiki/pages/03-DISCOVERY.md"
+      ],
+      "isGoProxy": [
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ],
+      "samplerFromConfig": [
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ],
+      "typer.FilterClassify": [
+        "docs/wiki/pages/03-DISCOVERY.md"
+      ],
+      "typer.addGoFunctionName": [
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ],
+      "typer.asInstrumentable": [
+        "docs/wiki/pages/03-DISCOVERY.md",
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ],
+      "typer.inspectOffsets": [
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ],
+      "typer.loadAllGoFunctionNames": [
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ],
+      "typer.makeServiceAttrs": [
+        "docs/wiki/pages/discovery/selection-and-typing.md"
+      ]
+    },
+    "pkg/appolly/instrumenter.go": {
+      "Build": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ],
+      "JoinMetricsConfig": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ],
+      "newGraphBuilder": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md",
+        "docs/wiki/pages/observability/attribute-groups.md",
+        "docs/wiki/pages/pipeline/msg-queue.md",
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "setupMetricsSubPipeline": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ]
+    },
+    "pkg/buildinfo/buildinfo.go": {
+      "10": [
+        "docs/wiki/pages/09-BUILD-AND-VALIDATION.md"
+      ],
+      "9": [
+        "docs/wiki/pages/09-BUILD-AND-VALIDATION.md"
+      ]
+    },
+    "pkg/ebpf/common/common.go": {
+      "EBPFEventContext": [
+        "docs/wiki/pages/04-EBPF-LAYER.md"
+      ]
+    },
+    "pkg/ebpf/instrumenter.go": {
+      "attachSocketFilter": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "gatherOffsets": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "htons": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.addModule": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.goprobes": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.handleSockFilterErr": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.hasModule": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.iters": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.kprobes": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.sockfilters": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.sockmsgs": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.sockops": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.tracepoints": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.tracing": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "instrumenter.uprobes": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/probe-attachment.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "instrumenter.usdtProbes": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "isLittleEndian": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "matchVersionedUprobeLibrary": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "parseVersionAnnotation": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "processMaps": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "resolveExePath": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "usdtIPMapPIDs": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "versionFromPath": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ]
+    },
+    "pkg/ebpf/tracer.go": {
+      "CommonTracer": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "Instrumentable": [
+        "docs/wiki/pages/04-EBPF-LAYER.md"
+      ],
+      "KprobesTracer": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "PIDsAccounter": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "ProcessTracer": [
+        "docs/wiki/pages/04-EBPF-LAYER.md"
+      ],
+      "ProcessTracer.AllowPID": [
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "ProcessTracer.BlockPID": [
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "Tracer": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "UtilityTracer": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ]
+    },
+    "pkg/ebpf/tracer_linux.go": {
+      "NewProcessTracer": [
+        "docs/wiki/pages/04-EBPF-LAYER.md"
+      ],
+      "ProcessTracer.NewExecutable": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/probe-attachment.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "ProcessTracer.Run": [
+        "docs/wiki/pages/04-EBPF-LAYER.md"
+      ],
+      "ProcessTracer.UnlinkExecutable": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "ProcessTracer.loadTracers": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "ProcessTracer.makeOtelBPFFSPath": [
+        "docs/wiki/pages/ebpf/pin-internal-and-scratch-mem.md"
+      ],
+      "ProcessTracer.setupOtelBPFFSPath": [
+        "docs/wiki/pages/ebpf/pin-internal-and-scratch-mem.md"
+      ],
+      "RunUtilityTracer": [
+        "docs/wiki/pages/04-EBPF-LAYER.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ],
+      "printVerifierErrorInfo": [
+        "docs/wiki/pages/ebpf/probe-attachment.md"
+      ],
+      "unloadInternalMaps": [
+        "docs/wiki/pages/ebpf/pin-internal-and-scratch-mem.md"
+      ]
+    },
+    "pkg/export/attributes/attr_defs.go": {
+      "21-38": [
+        "docs/wiki/pages/observability/attribute-groups.md"
+      ],
+      "57-62": [
+        "docs/wiki/pages/observability/attribute-groups.md"
+      ]
+    },
+    "pkg/export/imetrics/imetrics.go": {
+      "IsBuiltinNoopReporter": [
+        "docs/wiki/pages/observability/internal-metrics.md"
+      ],
+      "NoopReporter": [
+        "docs/wiki/pages/observability/internal-metrics.md"
+      ],
+      "Reporter": [
+        "docs/wiki/pages/observability/internal-metrics.md"
+      ]
+    },
+    "pkg/export/otel/metrics.go": {
+      "ReportMetrics": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ]
+    },
+    "pkg/export/otel/traces.go": {
+      "TracesReceiver": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ]
+    },
+    "pkg/export/prom/prom.go": {
+      "PrometheusEndpoint": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ]
+    },
+    "pkg/filter/attribute.go": {
+      "ByAttribute": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ]
+    },
+    "pkg/health/health.go": {
+      "ListenAndServeTCP": [
+        "docs/wiki/pages/02-ENTRYPOINT.md"
+      ],
+      "ListenAndServeUDS": [
+        "docs/wiki/pages/02-ENTRYPOINT.md"
+      ]
+    },
+    "pkg/instrumenter/instrumenter.go": {
+      "BuildCommonContextInfo": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/02-ENTRYPOINT.md",
+        "docs/wiki/pages/06-CONFIGURATION.md",
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md",
+        "docs/wiki/pages/observability/internal-metrics.md"
+      ],
+      "Run": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/02-ENTRYPOINT.md"
+      ],
+      "RunWithContextInfo": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/02-ENTRYPOINT.md"
+      ],
+      "attributeGroups": [
+        "docs/wiki/pages/observability/attribute-groups.md"
+      ],
+      "internalMetrics": [
+        "docs/wiki/pages/observability/internal-metrics.md"
+      ],
+      "setupAppO11y": [
+        "docs/wiki/pages/02-ENTRYPOINT.md"
+      ],
+      "setupNetO11y": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "setupStatsO11y": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "startHealthCheck": [
+        "docs/wiki/pages/02-ENTRYPOINT.md"
+      ]
+    },
+    "pkg/internal/appolly/appolly.go": {
+      "Instrumenter": [
+        "docs/wiki/pages/01-ARCHITECTURE.md"
+      ],
+      "Instrumenter.WaitUntilFinished": [
+        "docs/wiki/pages/02-ENTRYPOINT.md",
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "Instrumenter.instrumentedEventLoop": [
+        "docs/wiki/pages/03-DISCOVERY.md"
+      ],
+      "New": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ],
+      "setupKubernetes": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md",
+        "docs/wiki/pages/observability/attribute-groups.md"
+      ]
+    },
+    "pkg/internal/ebpf/generictracer/generictracer.go": {
+      "New": [
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ]
+    },
+    "pkg/internal/ebpf/gotracer/gotracer.go": {
+      "New": [
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ]
+    },
+    "pkg/internal/ebpf/gpuevent/gpuevent.go": {
+      "New": [
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ]
+    },
+    "pkg/internal/ebpf/logenricher/logenricher.go": {
+      "New": [
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ]
+    },
+    "pkg/internal/ebpf/tpinjector/tpinjector.go": {
+      "New": [
+        "docs/wiki/pages/ebpf/context-propagation.md",
+        "docs/wiki/pages/ebpf/tracer-interface.md"
+      ]
+    },
+    "pkg/internal/helpers/msg/queue_from_cfg.go": {
+      "QueueFromConfig": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ]
+    },
+    "pkg/internal/procs/procenv.go": {
+      "20-31": [
+        "docs/wiki/pages/discovery/process-env-capture.md"
+      ],
+      "EnvVars": [
+        "docs/wiki/pages/03-DISCOVERY.md",
+        "docs/wiki/pages/discovery/process-env-capture.md"
+      ],
+      "envStrsToMap": [
+        "docs/wiki/pages/discovery/process-env-capture.md"
+      ]
+    },
+    "pkg/internal/traces/read_decorator.go": {
+      "ReadDecorator": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ],
+      "ReadFromChannel": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ]
+    },
+    "pkg/kube/cache_svc_client.go": {
+      "cacheSvcClient.On": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "cacheSvcClient.connect": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "normalizeReconnectInitialInterval": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ]
+    },
+    "pkg/kube/informer_provider.go": {
+      "MetadataConfig": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "MetadataProvider": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "MetadataProvider.ClusterName": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "MetadataProvider.CurrentNodeName": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "MetadataProvider.ForceDisable": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "MetadataProvider.Get": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "MetadataProvider.IsKubeEnabled": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "MetadataProvider.initLocalInformers": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "MetadataProvider.initRemoteInformerCacheClient": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "NewMetadataProvider": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ],
+      "disabledInformerOpts": [
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ]
+    },
+    "pkg/netolly/agent/agent.go": {
+      "Flows.Run": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "Flows.Status": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "Flows.stop": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "FlowsAgent": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "flowDirections": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "monitorMode": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "newFetcher": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ]
+    },
+    "pkg/netolly/agent/pipeline.go": {
+      "Flows.buildPipeline": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ]
+    },
+    "pkg/obi/config.go": {
+      "118": [
+        "docs/wiki/pages/06-CONFIGURATION.md"
+      ],
+      "Config": [
+        "docs/wiki/pages/06-CONFIGURATION.md",
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "Config.Enabled": [
+        "docs/wiki/pages/06-CONFIGURATION.md"
+      ],
+      "Config.JoinMetricsConfig": [
+        "docs/wiki/pages/06-CONFIGURATION.md"
+      ],
+      "Config.Log": [
+        "docs/wiki/pages/02-ENTRYPOINT.md",
+        "docs/wiki/pages/06-CONFIGURATION.md"
+      ],
+      "Config.Unmarshal": [
+        "docs/wiki/pages/06-CONFIGURATION.md"
+      ],
+      "Config.Validate": [
+        "docs/wiki/pages/02-ENTRYPOINT.md",
+        "docs/wiki/pages/06-CONFIGURATION.md"
+      ],
+      "Feature": [
+        "docs/wiki/pages/06-CONFIGURATION.md"
+      ],
+      "HealthCheckConfig": [
+        "docs/wiki/pages/02-ENTRYPOINT.md",
+        "docs/wiki/pages/06-CONFIGURATION.md"
+      ],
+      "LoadConfig": [
+        "docs/wiki/pages/02-ENTRYPOINT.md",
+        "docs/wiki/pages/06-CONFIGURATION.md"
+      ]
+    },
+    "pkg/pipe/msg/queue.go": {
+      "185": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "195": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "297": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "325": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "387": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "ChannelBufferLen": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "NewQueue": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "Queue": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "SendTimeout": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ],
+      "SubscriberName": [
+        "docs/wiki/pages/pipeline/msg-queue.md"
+      ]
+    },
+    "pkg/pipe/swarm/instancer.go": {
+      "DirectInstance": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "InstanceFunc": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "Instancer": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "Instancer.Add": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "Instancer.Instance": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "WithID": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ]
+    },
+    "pkg/pipe/swarm/runner.go": {
+      "Bypass": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "RunFunc": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "Runner": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "Runner.Done": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "Runner.Start": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md",
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ],
+      "WithCancelTimeout": [
+        "docs/wiki/pages/pipeline/swarm-instancer.md"
+      ]
+    },
+    "pkg/statsolly/agent/agent.go": {
+      "Stats.Run": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "StatsAgent": [
+        "docs/wiki/pages/01-ARCHITECTURE.md",
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ],
+      "newFetcher": [
+        "docs/wiki/pages/08-NETWORK-AND-STATS.md"
+      ]
+    },
+    "pkg/transform/k8s.go": {
+      "KubeDecoratorProvider": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md",
+        "docs/wiki/pages/07-KUBERNETES-METADATA.md"
+      ]
+    },
+    "pkg/transform/routes.go": {
+      "RoutesProvider": [
+        "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md"
+      ]
+    }
+  },
+  "by_page": {
+    "docs/wiki/pages/01-ARCHITECTURE.md": [
+      "cmd/obi/main.go:main",
+      "pkg/appolly/discover/finder.go:ProcessFinder.Start",
+      "pkg/appolly/instrumenter.go:Build",
+      "pkg/instrumenter/instrumenter.go:BuildCommonContextInfo",
+      "pkg/instrumenter/instrumenter.go:Run",
+      "pkg/instrumenter/instrumenter.go:RunWithContextInfo",
+      "pkg/internal/appolly/appolly.go:Instrumenter",
+      "pkg/internal/appolly/appolly.go:setupKubernetes",
+      "pkg/netolly/agent/agent.go:FlowsAgent",
+      "pkg/pipe/msg/queue.go:Queue",
+      "pkg/pipe/swarm/instancer.go:Instancer",
+      "pkg/statsolly/agent/agent.go:StatsAgent"
+    ],
+    "docs/wiki/pages/02-ENTRYPOINT.md": [
+      "cmd/obi/main.go:loadConfig",
+      "cmd/obi/main.go:main",
+      "pkg/health/health.go:ListenAndServeTCP",
+      "pkg/health/health.go:ListenAndServeUDS",
+      "pkg/instrumenter/instrumenter.go:BuildCommonContextInfo",
+      "pkg/instrumenter/instrumenter.go:Run",
+      "pkg/instrumenter/instrumenter.go:RunWithContextInfo",
+      "pkg/instrumenter/instrumenter.go:setupAppO11y",
+      "pkg/instrumenter/instrumenter.go:startHealthCheck",
+      "pkg/internal/appolly/appolly.go:Instrumenter.WaitUntilFinished",
+      "pkg/obi/config.go:Config.Log",
+      "pkg/obi/config.go:Config.Validate",
+      "pkg/obi/config.go:HealthCheckConfig",
+      "pkg/obi/config.go:LoadConfig"
+    ],
+    "docs/wiki/pages/03-DISCOVERY.md": [
+      "pkg/appolly/discover/dynamic_pid_selector.go:DynamicPIDSelector",
+      "pkg/appolly/discover/finder.go:NewProcessFinder",
+      "pkg/appolly/discover/finder.go:ProcessFinder.Start",
+      "pkg/appolly/discover/finder.go:newCommonTracersGroup",
+      "pkg/appolly/discover/finder.go:newGenericTracersGroup",
+      "pkg/appolly/discover/finder.go:newGoTracersGroup",
+      "pkg/appolly/discover/matcher.go:FindingCriteria",
+      "pkg/appolly/discover/typer.go:ExecTyperProvider",
+      "pkg/appolly/discover/typer.go:typer.FilterClassify",
+      "pkg/appolly/discover/typer.go:typer.asInstrumentable",
+      "pkg/internal/appolly/appolly.go:Instrumenter.instrumentedEventLoop",
+      "pkg/internal/procs/procenv.go:EnvVars"
+    ],
+    "docs/wiki/pages/04-EBPF-LAYER.md": [
+      "pkg/ebpf/common/common.go:EBPFEventContext",
+      "pkg/ebpf/instrumenter.go:instrumenter.goprobes",
+      "pkg/ebpf/instrumenter.go:instrumenter.kprobes",
+      "pkg/ebpf/instrumenter.go:instrumenter.sockfilters",
+      "pkg/ebpf/instrumenter.go:instrumenter.uprobes",
+      "pkg/ebpf/instrumenter.go:instrumenter.usdtProbes",
+      "pkg/ebpf/tracer.go:CommonTracer",
+      "pkg/ebpf/tracer.go:Instrumentable",
+      "pkg/ebpf/tracer.go:KprobesTracer",
+      "pkg/ebpf/tracer.go:PIDsAccounter",
+      "pkg/ebpf/tracer.go:ProcessTracer",
+      "pkg/ebpf/tracer.go:Tracer",
+      "pkg/ebpf/tracer.go:UtilityTracer",
+      "pkg/ebpf/tracer_linux.go:NewProcessTracer",
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.NewExecutable",
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.Run",
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.UnlinkExecutable",
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.loadTracers",
+      "pkg/ebpf/tracer_linux.go:RunUtilityTracer"
+    ],
+    "docs/wiki/pages/05-PIPELINE-AND-EXPORT.md": [
+      "pkg/appolly/discover/finder.go:ProcessFinder.Start",
+      "pkg/appolly/instrumenter.go:Build",
+      "pkg/appolly/instrumenter.go:JoinMetricsConfig",
+      "pkg/appolly/instrumenter.go:newGraphBuilder",
+      "pkg/appolly/instrumenter.go:setupMetricsSubPipeline",
+      "pkg/export/otel/metrics.go:ReportMetrics",
+      "pkg/export/otel/traces.go:TracesReceiver",
+      "pkg/export/prom/prom.go:PrometheusEndpoint",
+      "pkg/filter/attribute.go:ByAttribute",
+      "pkg/internal/appolly/appolly.go:New",
+      "pkg/internal/traces/read_decorator.go:ReadDecorator",
+      "pkg/internal/traces/read_decorator.go:ReadFromChannel",
+      "pkg/pipe/swarm/runner.go:Runner.Start",
+      "pkg/transform/k8s.go:KubeDecoratorProvider",
+      "pkg/transform/routes.go:RoutesProvider"
+    ],
+    "docs/wiki/pages/06-CONFIGURATION.md": [
+      "pkg/instrumenter/instrumenter.go:BuildCommonContextInfo",
+      "pkg/obi/config.go:118",
+      "pkg/obi/config.go:Config",
+      "pkg/obi/config.go:Config.Enabled",
+      "pkg/obi/config.go:Config.JoinMetricsConfig",
+      "pkg/obi/config.go:Config.Log",
+      "pkg/obi/config.go:Config.Unmarshal",
+      "pkg/obi/config.go:Config.Validate",
+      "pkg/obi/config.go:Feature",
+      "pkg/obi/config.go:HealthCheckConfig",
+      "pkg/obi/config.go:LoadConfig"
+    ],
+    "docs/wiki/pages/07-KUBERNETES-METADATA.md": [
+      "pkg/instrumenter/instrumenter.go:BuildCommonContextInfo",
+      "pkg/internal/appolly/appolly.go:setupKubernetes",
+      "pkg/kube/cache_svc_client.go:cacheSvcClient.On",
+      "pkg/kube/cache_svc_client.go:cacheSvcClient.connect",
+      "pkg/kube/cache_svc_client.go:normalizeReconnectInitialInterval",
+      "pkg/kube/informer_provider.go:MetadataConfig",
+      "pkg/kube/informer_provider.go:MetadataProvider",
+      "pkg/kube/informer_provider.go:MetadataProvider.ClusterName",
+      "pkg/kube/informer_provider.go:MetadataProvider.CurrentNodeName",
+      "pkg/kube/informer_provider.go:MetadataProvider.ForceDisable",
+      "pkg/kube/informer_provider.go:MetadataProvider.Get",
+      "pkg/kube/informer_provider.go:MetadataProvider.IsKubeEnabled",
+      "pkg/kube/informer_provider.go:MetadataProvider.initLocalInformers",
+      "pkg/kube/informer_provider.go:MetadataProvider.initRemoteInformerCacheClient",
+      "pkg/kube/informer_provider.go:NewMetadataProvider",
+      "pkg/kube/informer_provider.go:disabledInformerOpts",
+      "pkg/transform/k8s.go:KubeDecoratorProvider"
+    ],
+    "docs/wiki/pages/08-NETWORK-AND-STATS.md": [
+      "pkg/instrumenter/instrumenter.go:setupNetO11y",
+      "pkg/instrumenter/instrumenter.go:setupStatsO11y",
+      "pkg/netolly/agent/agent.go:Flows.Run",
+      "pkg/netolly/agent/agent.go:Flows.Status",
+      "pkg/netolly/agent/agent.go:Flows.stop",
+      "pkg/netolly/agent/agent.go:FlowsAgent",
+      "pkg/netolly/agent/agent.go:flowDirections",
+      "pkg/netolly/agent/agent.go:monitorMode",
+      "pkg/netolly/agent/agent.go:newFetcher",
+      "pkg/netolly/agent/pipeline.go:Flows.buildPipeline",
+      "pkg/statsolly/agent/agent.go:Stats.Run",
+      "pkg/statsolly/agent/agent.go:StatsAgent",
+      "pkg/statsolly/agent/agent.go:newFetcher"
+    ],
+    "docs/wiki/pages/09-BUILD-AND-VALIDATION.md": [
+      "cmd/obi/main.go:main",
+      "pkg/buildinfo/buildinfo.go:10",
+      "pkg/buildinfo/buildinfo.go:9"
+    ],
+    "docs/wiki/pages/discovery/process-env-capture.md": [
+      "pkg/internal/procs/procenv.go:20-31",
+      "pkg/internal/procs/procenv.go:EnvVars",
+      "pkg/internal/procs/procenv.go:envStrsToMap"
+    ],
+    "docs/wiki/pages/discovery/selection-and-typing.md": [
+      "pkg/appolly/discover/dynamic_pid_selector.go:DynamicPIDSelector",
+      "pkg/appolly/discover/finder.go:ProcessFinder.Start",
+      "pkg/appolly/discover/finder.go:newGenericTracersGroup",
+      "pkg/appolly/discover/finder.go:newGoTracersGroup",
+      "pkg/appolly/discover/matcher.go:FindingCriteria",
+      "pkg/appolly/discover/matcher.go:OnlyDefinesDeprecatedServiceSelection",
+      "pkg/appolly/discover/typer.go:isGoProxy",
+      "pkg/appolly/discover/typer.go:samplerFromConfig",
+      "pkg/appolly/discover/typer.go:typer.addGoFunctionName",
+      "pkg/appolly/discover/typer.go:typer.asInstrumentable",
+      "pkg/appolly/discover/typer.go:typer.inspectOffsets",
+      "pkg/appolly/discover/typer.go:typer.loadAllGoFunctionNames",
+      "pkg/appolly/discover/typer.go:typer.makeServiceAttrs"
+    ],
+    "docs/wiki/pages/ebpf/context-propagation.md": [
+      "pkg/appolly/discover/finder.go:newCommonTracersGroup",
+      "pkg/internal/ebpf/tpinjector/tpinjector.go:New"
+    ],
+    "docs/wiki/pages/ebpf/pin-internal-and-scratch-mem.md": [
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.makeOtelBPFFSPath",
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.setupOtelBPFFSPath",
+      "pkg/ebpf/tracer_linux.go:unloadInternalMaps"
+    ],
+    "docs/wiki/pages/ebpf/probe-attachment.md": [
+      "pkg/ebpf/instrumenter.go:attachSocketFilter",
+      "pkg/ebpf/instrumenter.go:gatherOffsets",
+      "pkg/ebpf/instrumenter.go:htons",
+      "pkg/ebpf/instrumenter.go:instrumenter.addModule",
+      "pkg/ebpf/instrumenter.go:instrumenter.goprobes",
+      "pkg/ebpf/instrumenter.go:instrumenter.handleSockFilterErr",
+      "pkg/ebpf/instrumenter.go:instrumenter.hasModule",
+      "pkg/ebpf/instrumenter.go:instrumenter.iters",
+      "pkg/ebpf/instrumenter.go:instrumenter.kprobes",
+      "pkg/ebpf/instrumenter.go:instrumenter.sockfilters",
+      "pkg/ebpf/instrumenter.go:instrumenter.sockmsgs",
+      "pkg/ebpf/instrumenter.go:instrumenter.sockops",
+      "pkg/ebpf/instrumenter.go:instrumenter.tracepoints",
+      "pkg/ebpf/instrumenter.go:instrumenter.tracing",
+      "pkg/ebpf/instrumenter.go:instrumenter.uprobes",
+      "pkg/ebpf/instrumenter.go:instrumenter.usdtProbes",
+      "pkg/ebpf/instrumenter.go:isLittleEndian",
+      "pkg/ebpf/instrumenter.go:matchVersionedUprobeLibrary",
+      "pkg/ebpf/instrumenter.go:parseVersionAnnotation",
+      "pkg/ebpf/instrumenter.go:processMaps",
+      "pkg/ebpf/instrumenter.go:resolveExePath",
+      "pkg/ebpf/instrumenter.go:usdtIPMapPIDs",
+      "pkg/ebpf/instrumenter.go:versionFromPath",
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.NewExecutable",
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.UnlinkExecutable",
+      "pkg/ebpf/tracer_linux.go:printVerifierErrorInfo"
+    ],
+    "docs/wiki/pages/ebpf/tracer-interface.md": [
+      "pkg/ebpf/instrumenter.go:instrumenter.uprobes",
+      "pkg/ebpf/tracer.go:CommonTracer",
+      "pkg/ebpf/tracer.go:KprobesTracer",
+      "pkg/ebpf/tracer.go:PIDsAccounter",
+      "pkg/ebpf/tracer.go:ProcessTracer.AllowPID",
+      "pkg/ebpf/tracer.go:ProcessTracer.BlockPID",
+      "pkg/ebpf/tracer.go:Tracer",
+      "pkg/ebpf/tracer.go:UtilityTracer",
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.NewExecutable",
+      "pkg/ebpf/tracer_linux.go:ProcessTracer.loadTracers",
+      "pkg/ebpf/tracer_linux.go:RunUtilityTracer",
+      "pkg/internal/ebpf/generictracer/generictracer.go:New",
+      "pkg/internal/ebpf/gotracer/gotracer.go:New",
+      "pkg/internal/ebpf/gpuevent/gpuevent.go:New",
+      "pkg/internal/ebpf/logenricher/logenricher.go:New",
+      "pkg/internal/ebpf/tpinjector/tpinjector.go:New"
+    ],
+    "docs/wiki/pages/observability/attribute-groups.md": [
+      "pkg/appolly/instrumenter.go:newGraphBuilder",
+      "pkg/export/attributes/attr_defs.go:21-38",
+      "pkg/export/attributes/attr_defs.go:57-62",
+      "pkg/instrumenter/instrumenter.go:attributeGroups",
+      "pkg/internal/appolly/appolly.go:setupKubernetes"
+    ],
+    "docs/wiki/pages/observability/internal-metrics.md": [
+      "pkg/export/imetrics/imetrics.go:IsBuiltinNoopReporter",
+      "pkg/export/imetrics/imetrics.go:NoopReporter",
+      "pkg/export/imetrics/imetrics.go:Reporter",
+      "pkg/instrumenter/instrumenter.go:BuildCommonContextInfo",
+      "pkg/instrumenter/instrumenter.go:internalMetrics"
+    ],
+    "docs/wiki/pages/pipeline/msg-queue.md": [
+      "pkg/appolly/instrumenter.go:newGraphBuilder",
+      "pkg/internal/helpers/msg/queue_from_cfg.go:QueueFromConfig",
+      "pkg/obi/config.go:Config",
+      "pkg/pipe/msg/queue.go:185",
+      "pkg/pipe/msg/queue.go:195",
+      "pkg/pipe/msg/queue.go:297",
+      "pkg/pipe/msg/queue.go:325",
+      "pkg/pipe/msg/queue.go:387",
+      "pkg/pipe/msg/queue.go:ChannelBufferLen",
+      "pkg/pipe/msg/queue.go:NewQueue",
+      "pkg/pipe/msg/queue.go:Queue",
+      "pkg/pipe/msg/queue.go:SendTimeout",
+      "pkg/pipe/msg/queue.go:SubscriberName"
+    ],
+    "docs/wiki/pages/pipeline/swarm-instancer.md": [
+      "pkg/appolly/discover/finder.go:ProcessFinder.Start",
+      "pkg/appolly/instrumenter.go:newGraphBuilder",
+      "pkg/internal/appolly/appolly.go:Instrumenter.WaitUntilFinished",
+      "pkg/pipe/swarm/instancer.go:DirectInstance",
+      "pkg/pipe/swarm/instancer.go:InstanceFunc",
+      "pkg/pipe/swarm/instancer.go:Instancer",
+      "pkg/pipe/swarm/instancer.go:Instancer.Add",
+      "pkg/pipe/swarm/instancer.go:Instancer.Instance",
+      "pkg/pipe/swarm/instancer.go:WithID",
+      "pkg/pipe/swarm/runner.go:Bypass",
+      "pkg/pipe/swarm/runner.go:RunFunc",
+      "pkg/pipe/swarm/runner.go:Runner",
+      "pkg/pipe/swarm/runner.go:Runner.Done",
+      "pkg/pipe/swarm/runner.go:Runner.Start",
+      "pkg/pipe/swarm/runner.go:WithCancelTimeout"
+    ]
+  },
+  "schema_version": "v0.7.0"
+}
