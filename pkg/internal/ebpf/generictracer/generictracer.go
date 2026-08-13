@@ -214,10 +214,8 @@ func (p *Tracer) SetupTailCalls() {
 		p.bpfObjects.ObiProtocolHttp2GrpcHandleStartFrameServerFinalize, // 12
 		// Large buffer multi-batch emission
 		p.bpfObjects.ObiLargeBufEmitContinue,                            // 13  k_tail_large_buf_emit_continue
-		p.bpfObjects.ObiProtocolHttp2GrpcHandleStartFrameServerCommit,   // 14
-		p.bpfObjects.ObiProtocolHttp2GrpcHandleStartFrameClient,         // 15
-		p.bpfObjects.ObiProtocolHttp2GrpcHandleStartFrameClientFinalize, // 16
-		p.bpfObjects.ObiProtocolHttp2GrpcHandleStartFrameClientCommit,   // 17
+		p.bpfObjects.ObiProtocolHttp2GrpcHandleStartFrameServerCommit, // 14
+		p.bpfObjects.ObiProtocolHttp2GrpcHandleStartFrameClientCommit, // 15
 	} {
 		if prog == nil {
 			continue
