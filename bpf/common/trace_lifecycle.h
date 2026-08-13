@@ -27,6 +27,10 @@
 static __always_inline void trace_id_server_request_start(u32 host_pid, const tp_info_pid_t *tp_p) {
     trace_id_key_t tid_key = {.pid = host_pid};
     __builtin_memcpy(tid_key.trace_id, tp_p->tp.trace_id, sizeof(tid_key.trace_id));
+    bpf_dbg_printk("tidmap start pid=%u trace=%llx valid=%d",
+                   host_pid,
+                   *(const u64 *)tp_p->tp.trace_id,
+                   tp_p->valid);
     bpf_map_update_elem(&trace_id_server_map, &tid_key, tp_p, BPF_ANY);
 
     pid_server_state_t *state = bpf_map_lookup_elem(&pid_server_state_map, &host_pid);
@@ -64,12 +68,24 @@ static __always_inline u8 find_server_for_client_trace_id(u32 host_pid, tp_info_
     __builtin_memcpy(tid_key.trace_id, tp->trace_id, sizeof(tid_key.trace_id));
 
     const tp_info_pid_t *server_tp = bpf_map_lookup_elem(&trace_id_server_map, &tid_key);
+    bpf_dbg_printk("tidmap lookup pid=%u trace=%llx hit=%d",
+                   host_pid,
+                   *(const u64 *)tp->trace_id,
+                   server_tp != NULL);
     if (server_tp && server_tp->valid && should_be_in_same_transaction(&server_tp->tp, tp)) {
         __builtin_memcpy(tp->parent_id, server_tp->tp.span_id, sizeof(tp->parent_id));
         return 1;
     }
 
     const pid_server_state_t *state = bpf_map_lookup_elem(&pid_server_state_map, &host_pid);
+    if (state) {
+        bpf_dbg_printk("tidmap fallback pid=%u live=%u valid=%d",
+                       host_pid,
+                       state->live,
+                       state->tp.valid);
+    } else {
+        bpf_dbg_printk("tidmap fallback pid=%u no-state", host_pid);
+    }
     if (state && state->live == 1 && state->tp.valid && valid_trace(state->tp.tp.trace_id) &&
         should_be_in_same_transaction(&state->tp.tp, tp)) {
         __builtin_memcpy(tp->parent_id, state->tp.tp.span_id, sizeof(tp->parent_id));

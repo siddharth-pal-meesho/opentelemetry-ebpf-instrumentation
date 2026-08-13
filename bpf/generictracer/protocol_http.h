@@ -512,7 +512,7 @@ __obi_continue_protocol_http_tp(struct pt_regs *ctx,
                     // as parent, so adopt it as this client span's id to keep
                     // the cross-service parent chain intact.
                     decode_hex(tp_p->tp.span_id, s_id, SPAN_ID_CHAR_LEN);
-                    if (previous_trace_id &&
+                    if (!previous_trace_id ||
                         bpf_memcmp(previous_trace_id, tp_p->tp.trace_id, TRACE_ID_SIZE_BYTES) !=
                             0) {
                         // The thread-correlated parent belongs to another
