@@ -150,6 +150,8 @@ type Metrics struct {
 	spanMetricsCallsTotal        *Expirer[*request.Span, instrument.Int64Counter, int64]
 	spanMetricsRequestSizeTotal  *Expirer[*request.Span, instrument.Float64Counter, float64]
 	spanMetricsResponseSizeTotal *Expirer[*request.Span, instrument.Float64Counter, float64]
+	// api dependency (Meesho fork P5): entry API -> downstream API join
+	apiDep *apiDepTracker
 	// cuda/gpu
 	gpuKernelCallsTotal            *Expirer[*request.Span, instrument.Int64Counter, int64]
 	gpuGraphCallsTotal             *Expirer[*request.Span, instrument.Int64Counter, int64]
@@ -857,6 +859,42 @@ func (mr *MetricsReporter) setupSpanMeters(m *Metrics, meter instrument.Meter) e
 	return nil
 }
 
+// setupAPIDependencyMeter wires the Meesho fork P5 entry->downstream API
+// counter (feature application_api_dependency).
+func (mr *MetricsReporter) setupAPIDependencyMeter(m *Metrics, meter instrument.Meter) error {
+	if !mr.jointMetricsCfg.Features.APIDependency() {
+		return nil
+	}
+	counter, err := meter.Int64Counter(APIDependencyTotal)
+	if err != nil {
+		return fmt.Errorf("creating api dependency counter: %w", err)
+	}
+	overflow, err := meter.Int64Counter(APIDependencyOverflow)
+	if err != nil {
+		return fmt.Errorf("creating api dependency overflow counter: %w", err)
+	}
+	m.apiDep = newAPIDepTracker(m.ctx, counter, overflow)
+	return nil
+}
+
+func (mr *MetricsReporter) setupHostInfoMeter(meter instrument.Meter) error {
+	tracesHostInfo, err := meter.Int64Gauge(TracesHostInfo)
+	if err != nil {
+		return fmt.Errorf("creating span metric traces host info: %w", err)
+	}
+	attr := attributes.Field[*request.Span, attribute.KeyValue]{
+		ExposedName: string(CloudHostIDKey),
+		Get: func(_ *request.Span) attribute.KeyValue {
+			return semconv.HostID(mr.nodeMeta.HostID)
+		},
+	}
+
+	mr.hostInfo = NewExpirer[*request.Span, instrument.Int64Gauge, int64](
+		mr.ctx, tracesHostInfo, []attributes.Field[*request.Span, attribute.KeyValue]{attr}, timeNow, mr.cfg.TTL)
+
+	return nil
+}
+
 func (mr *MetricsReporter) newMetricsInstance(service *svc.Attrs) Metrics {
 	mlog := mlog()
 	var resourceAttributes []attribute.KeyValue
@@ -922,6 +960,10 @@ func (mr *MetricsReporter) setupMetricExpirers(m *Metrics, meter instrument.Mete
 	}
 
 	if err := mr.setupSpanSizeMeters(m, meter); err != nil {
+		return err
+	}
+
+	if err := mr.setupAPIDependencyMeter(m, meter); err != nil {
 		return err
 	}
 
@@ -1423,6 +1465,12 @@ func (r *Metrics) record(span *request.Span, mr *MetricsReporter) {
 			smst, attr := r.spanMetricsResponseSizeTotal.ForRecord(span, extraAttrs...)
 			smst.Add(ctx, float64(span.ResponseBodyLength()), instrument.WithAttributeSet(attr))
 		}
+	}
+
+	// Meesho fork P5: join this instance's egress calls to their entry span
+	// (buffered per trace; entry span always completes last).
+	if r.apiDep != nil && span.Service.Features.APIDependency() && !span.IsDNSSpan() {
+		r.apiDep.Span(span)
 	}
 }
 
