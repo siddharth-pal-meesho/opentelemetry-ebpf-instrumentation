@@ -38,8 +38,8 @@ func (f *fakeCounter) Remove(_ context.Context, _ ...instrument.RemoveOption) {}
 func tidN(i int) trace2.TraceID {
 	return trace2.TraceID{byte(i), byte(i >> 8), byte(i >> 16), 1}
 }
-func tid(b byte) trace2.TraceID   { return trace2.TraceID{b, 1} }
-func sid(b byte) trace2.SpanID    { return trace2.SpanID{b, 1} }
+func tid(b byte) trace2.TraceID { return trace2.TraceID{b, 1} }
+func sid(b byte) trace2.SpanID  { return trace2.SpanID{b, 1} }
 func attrsOf(m map[string]string) attribute.Set {
 	kvs := make([]attribute.KeyValue, 0, len(m))
 	for k, v := range m {
