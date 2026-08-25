@@ -37,6 +37,10 @@ const (
 	FeatureApplicationHost
 	FeatureApplicationRuntime
 	FeatureEBPF
+	// FeatureAPIDependency emits api_dependency_total{entry_api,dst_api,...}:
+	// per-request join of a service's egress client spans to their entry
+	// (server/consumer) span, aggregated at the edge. Meesho fork (P5).
+	FeatureAPIDependency
 	FeatureAll = Features(^uint(0)) // all bits to 1
 )
 
@@ -64,6 +68,7 @@ var FeatureMapper = map[string]Features{
 	"application_service_graph":    FeatureGraph,
 	"application_host":             FeatureApplicationHost,
 	"application_runtime":          FeatureApplicationRuntime,
+	"application_api_dependency":   FeatureAPIDependency,
 	// Deprecated alias kept for v0.10 config compatibility.
 	"application_jvm": FeatureApplicationRuntime,
 	"ebpf":            FeatureEBPF,
@@ -180,6 +185,10 @@ func (f Features) LegacySpanMetrics() bool {
 
 func (f Features) ServiceGraph() bool {
 	return f.any(FeatureGraph)
+}
+
+func (f Features) APIDependency() bool {
+	return f.any(FeatureAPIDependency)
 }
 
 func (f Features) AppHost() bool {
