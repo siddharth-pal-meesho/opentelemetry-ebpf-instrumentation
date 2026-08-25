@@ -81,7 +81,10 @@ func newAPIDepTracker(ctx context.Context, counter, overflow instrument.Int64Cou
 
 // Span feeds every span of the service instance through the tracker.
 func (a *apiDepTracker) Span(span *request.Span) {
-	if a == nil || !span.TraceID.IsValid() {
+	if a == nil {
+		return
+	}
+	if !span.TraceID.IsValid() {
 		return
 	}
 	if span.IsClientSpan() {
