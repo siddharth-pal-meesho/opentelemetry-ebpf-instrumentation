@@ -877,24 +877,6 @@ func (mr *MetricsReporter) setupAPIDependencyMeter(m *Metrics, meter instrument.
 	return nil
 }
 
-func (mr *MetricsReporter) setupHostInfoMeter(meter instrument.Meter) error {
-	tracesHostInfo, err := meter.Int64Gauge(TracesHostInfo)
-	if err != nil {
-		return fmt.Errorf("creating span metric traces host info: %w", err)
-	}
-	attr := attributes.Field[*request.Span, attribute.KeyValue]{
-		ExposedName: string(CloudHostIDKey),
-		Get: func(_ *request.Span) attribute.KeyValue {
-			return semconv.HostID(mr.nodeMeta.HostID)
-		},
-	}
-
-	mr.hostInfo = NewExpirer[*request.Span, instrument.Int64Gauge, int64](
-		mr.ctx, tracesHostInfo, []attributes.Field[*request.Span, attribute.KeyValue]{attr}, timeNow, mr.cfg.TTL)
-
-	return nil
-}
-
 func (mr *MetricsReporter) newMetricsInstance(service *svc.Attrs) Metrics {
 	mlog := mlog()
 	var resourceAttributes []attribute.KeyValue
